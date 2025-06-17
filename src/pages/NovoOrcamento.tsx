@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -661,10 +660,16 @@ const NovoOrcamento = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            {steps[currentStep - 1].icon && (
-              <steps[currentStep - 1].icon className="w-5 h-5 mr-2" />
-            )}
-            {steps[currentStep - 1].title}
+            {(() => {
+              const currentStepData = steps[currentStep - 1];
+              const IconComponent = currentStepData?.icon;
+              return (
+                <>
+                  {IconComponent && <IconComponent className="w-5 h-5 mr-2" />}
+                  {currentStepData?.title}
+                </>
+              );
+            })()}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
