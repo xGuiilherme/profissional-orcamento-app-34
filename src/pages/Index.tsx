@@ -4,10 +4,12 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield } from 'lucide-react';
+import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield, X, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Index = () => {
   const [activePlan, setActivePlan] = useState('pro');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const benefits = [
     {
@@ -45,6 +47,63 @@ const Index = () => {
       profession: "Encanador",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
       comment: "Meus clientes ficaram impressionados com a qualidade dos orçamentos"
+    }
+  ];
+
+  const budgetExamples = [
+    {
+      id: 1,
+      category: "Eletricistas",
+      title: "Instalação Elétrica Residencial",
+      description: "Orçamento completo para instalação elétrica de casa de 120m²",
+      value: "R$ 3.500,00",
+      image: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&h=300&fit=crop",
+      items: ["Quadro elétrico", "Tomadas e interruptores", "Fiação", "Mão de obra"]
+    },
+    {
+      id: 2,
+      category: "Encanadores", 
+      title: "Reforma Hidráulica Completa",
+      description: "Substituição de tubulação e instalação de louças sanitárias",
+      value: "R$ 2.800,00",
+      image: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=400&h=300&fit=crop",
+      items: ["Tubos e conexões", "Registros", "Louças sanitárias", "Instalação"]
+    },
+    {
+      id: 3,
+      category: "Pintores",
+      title: "Pintura Externa e Interna",
+      description: "Pintura completa de casa de 2 andares com textura",
+      value: "R$ 4.200,00", 
+      image: "https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400&h=300&fit=crop",
+      items: ["Tinta acrílica", "Massa corrida", "Lixa e primers", "Mão de obra"]
+    },
+    {
+      id: 4,
+      category: "Marceneiros",
+      title: "Móveis Planejados Cozinha",
+      description: "Projeto completo de armários e bancadas sob medida",
+      value: "R$ 8.500,00",
+      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
+      items: ["MDF 18mm", "Ferragens", "Bancada granito", "Montagem"]
+    },
+    {
+      id: 5,
+      category: "Jardineiros",
+      title: "Paisagismo e Jardinagem",
+      description: "Criação de jardim com plantas ornamentais e sistema de irrigação",
+      value: "R$ 1.950,00",
+      image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=300&fit=crop",
+      items: ["Plantas e mudas", "Terra adubada", "Sistema irrigação", "Plantio"]
+    },
+    {
+      id: 6,
+      category: "Pedreiros",
+      title: "Construção de Muro",
+      description: "Muro de divisa com 30 metros lineares e portão",
+      value: "R$ 5.200,00",
+      image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&h=300&fit=crop",
+      items: ["Blocos de concreto", "Cimento e areia", "Ferragens", "Acabamento"]
     }
   ];
 
@@ -88,6 +147,8 @@ const Index = () => {
       recommended: false
     }
   ];
+
+  const categories = [...new Set(budgetExamples.map(example => example.category))];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -135,9 +196,81 @@ const Index = () => {
                 Começar Teste Grátis
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4">
-              Ver Demonstração
-            </Button>
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                  <Eye className="w-5 h-5 mr-2" />
+                  Ver Exemplos de Orçamentos
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-center mb-4">
+                    Exemplos de Orçamentos Profissionais
+                  </DialogTitle>
+                  <p className="text-gray-600 text-center">
+                    Veja a qualidade dos orçamentos que você pode criar com o OrçaFácil
+                  </p>
+                </DialogHeader>
+                
+                <div className="mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {budgetExamples.map((example, index) => (
+                      <Card 
+                        key={example.id} 
+                        className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                      >
+                        <div className="relative">
+                          <img 
+                            src={example.image} 
+                            alt={example.title}
+                            className="w-full h-48 object-cover rounded-t-lg"
+                          />
+                          <Badge className="absolute top-3 left-3 bg-blue-500 text-white">
+                            {example.category}
+                          </Badge>
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="font-semibold text-lg mb-2">{example.title}</h3>
+                          <p className="text-gray-600 text-sm mb-3">{example.description}</p>
+                          
+                          <div className="space-y-2 mb-4">
+                            <h4 className="font-medium text-sm text-gray-700">Itens inclusos:</h4>
+                            <ul className="text-xs text-gray-600 space-y-1">
+                              {example.items.map((item, idx) => (
+                                <li key={idx} className="flex items-center">
+                                  <Check className="w-3 h-3 text-green-500 mr-1" />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pt-3 border-t">
+                            <span className="text-lg font-bold text-blue-600">{example.value}</span>
+                            <Button size="sm" variant="outline">
+                              <FileText className="w-4 h-4 mr-1" />
+                              Ver PDF
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-8 text-center">
+                    <p className="text-gray-600 mb-4">
+                      Pronto para criar orçamentos como estes?
+                    </p>
+                    <Link to="/signup">
+                      <Button className="bg-blue-500 hover:bg-blue-600">
+                        Começar Agora - Teste Grátis
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           
           {/* Dashboard Preview */}
