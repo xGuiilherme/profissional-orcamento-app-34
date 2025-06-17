@@ -208,17 +208,24 @@ const Index = () => {
       <section id="testimonials" className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 animate-fade-in">
               O que nossos clientes dizem
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-600 animate-fade-in">
               Histórias reais de profissionais que transformaram seus negócios
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={index} 
+                className={`hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in`}
+                style={{
+                  animationDelay: `${index * 0.2}s`,
+                  animationFillMode: 'both'
+                }}
+              >
                 <CardContent className="p-8">
                   <div className="flex items-center mb-4">
                     {[...Array(5)].map((_, i) => (
