@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield, X, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import Modal from '@/components/Modal';
+import PdfPreview from '@/components/PdfPreview';
+import { useBudgetData } from '@/hooks/useBudgetData';
 
 const Index = () => {
   const [activePlan, setActivePlan] = useState('pro');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { selectedBudget, openBudgetModal, closeBudgetModal } = useBudgetData();
 
   const benefits = [
     {
@@ -248,7 +251,11 @@ const Index = () => {
                           
                           <div className="flex justify-between items-center pt-3 border-t">
                             <span className="text-lg font-bold text-blue-600">{example.value}</span>
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openBudgetModal(example.id)}
+                            >
                               <FileText className="w-4 h-4 mr-1" />
                               Ver PDF
                             </Button>
@@ -486,6 +493,18 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* PDF Preview Modal */}
+      <Modal
+        isOpen={!!selectedBudget}
+        onClose={closeBudgetModal}
+        title={selectedBudget ? `Prévia do Orçamento - ${selectedBudget.title}` : ''}
+        className="max-w-5xl"
+      >
+        {selectedBudget && (
+          <PdfPreview budget={selectedBudget} onClose={closeBudgetModal} />
+        )}
+      </Modal>
     </div>
   );
 };
