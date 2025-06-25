@@ -3,7 +3,6 @@ import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle } from 'luci
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/hooks/useBudgetData';
-import { useToast } from '@/hooks/use-toast';
 
 interface PdfPreviewProps {
   budget: BudgetData;
@@ -11,27 +10,11 @@ interface PdfPreviewProps {
 }
 
 const PdfPreview = ({ budget, onClose }: PdfPreviewProps) => {
-  const { toast } = useToast();
-  
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
-
-  const handleDownload = () => {
-    toast({
-      title: "Download Iniciado",
-      description: "O PDF do orçamento está sendo baixado...",
-    });
-  };
-
-  const handleCustomize = () => {
-    toast({
-      title: "Personalização",
-      description: "Redirecionando para edição do orçamento...",
-    });
-  };
 
   return (
     <div className="bg-white">
@@ -161,15 +144,9 @@ const PdfPreview = ({ budget, onClose }: PdfPreviewProps) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="p-6 bg-gray-50 border-t flex flex-col sm:flex-row gap-3 justify-end">
+      <div className="p-6 bg-gray-50 border-t flex justify-center">
         <Button variant="outline" onClick={onClose}>
           Fechar
-        </Button>
-        <Button variant="outline" onClick={handleCustomize} className="text-blue-600 border-blue-200 hover:bg-blue-50">
-          Personalizar
-        </Button>
-        <Button onClick={handleDownload} className="bg-green-500 hover:bg-green-600">
-          Baixar PDF
         </Button>
       </div>
     </div>
