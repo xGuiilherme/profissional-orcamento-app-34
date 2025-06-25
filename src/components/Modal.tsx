@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ModalProps {
   isOpen: boolean;
@@ -56,10 +55,10 @@ const Modal = ({ isOpen, onClose, title, children, className = '' }: ModalProps)
           </Button>
         </div>
         
-        {/* Content with ScrollArea */}
-        <ScrollArea className="h-[calc(90vh-160px)]">
+        {/* Content with improved scroll */}
+        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           {children}
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );
