@@ -13,6 +13,7 @@ import NovoOrcamento from "./pages/NovoOrcamento";
 import Perfil from "./pages/Perfil";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import Exemplos from "./pages/Exemplos";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          <Route path="/exemplos" element={<Exemplos />} />
           
           {/* Dashboard routes with layout */}
           <Route path="/" element={<DashboardLayout />}>
