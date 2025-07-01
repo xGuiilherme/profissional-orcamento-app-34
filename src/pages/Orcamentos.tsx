@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -178,7 +177,6 @@ const Orcamentos = () => {
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
                 <SelectItem value="Pendente">Pendente</SelectItem>
                 <SelectItem value="Aprovado">Aprovado</SelectItem>
                 <SelectItem value="Rejeitado">Rejeitado</SelectItem>
@@ -190,7 +188,6 @@ const Orcamentos = () => {
                 <SelectValue placeholder="Filtrar por profissão" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as profissões</SelectItem>
                 <SelectItem value="Eletricista">Eletricista</SelectItem>
                 <SelectItem value="Encanador">Encanador</SelectItem>
                 <SelectItem value="Pintor">Pintor</SelectItem>
