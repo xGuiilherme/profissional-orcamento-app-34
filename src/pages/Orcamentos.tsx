@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,8 +29,10 @@ import {
   Download,
   MessageSquare
 } from 'lucide-react';
+import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
 
 const Orcamentos = () => {
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [professionFilter, setProfessionFilter] = useState('');
@@ -151,12 +152,17 @@ const Orcamentos = () => {
           <h1 className="text-3xl font-bold text-gray-900">Meus Orçamentos</h1>
           <p className="text-gray-600 mt-1">Gerencie todos os seus orçamentos em um só lugar</p>
         </div>
-        <Link to="/orcamento/novo">
-          <Button className="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Orçamento
+        <div className="flex gap-2 mt-4 sm:mt-0">
+          <Button variant="outline" onClick={() => setIsTemplateModalOpen(true)}>
+            Criar com Template
           </Button>
-        </Link>
+          <Link to="/orcamento/novo">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Orçamento
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -178,7 +184,6 @@ const Orcamentos = () => {
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
                 <SelectItem value="Pendente">Pendente</SelectItem>
                 <SelectItem value="Aprovado">Aprovado</SelectItem>
                 <SelectItem value="Rejeitado">Rejeitado</SelectItem>
@@ -190,7 +195,6 @@ const Orcamentos = () => {
                 <SelectValue placeholder="Filtrar por profissão" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as profissões</SelectItem>
                 <SelectItem value="Eletricista">Eletricista</SelectItem>
                 <SelectItem value="Encanador">Encanador</SelectItem>
                 <SelectItem value="Pintor">Pintor</SelectItem>
@@ -331,6 +335,12 @@ const Orcamentos = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de seleção de template */}
+      <TemplateSelectionModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+      />
     </div>
   );
 };
