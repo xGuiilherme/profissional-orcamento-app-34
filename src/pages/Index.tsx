@@ -4,15 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield, X, Eye } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import Modal from '@/components/Modal';
-import PdfPreview from '@/components/PdfPreview';
-import { useBudgetData } from '@/hooks/useBudgetData';
+
 
 const Index = () => {
   const [activePlan, setActivePlan] = useState('pro');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { selectedBudget, openBudgetModal, closeBudgetModal } = useBudgetData();
+  
 
   const benefits = [
     {
@@ -199,85 +195,12 @@ const Index = () => {
                 Começar Teste Grátis
               </Button>
             </Link>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="lg" className="text-lg px-8 py-4">
-                  <Eye className="w-5 h-5 mr-2" />
-                  Ver Exemplos de Orçamentos
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold text-center mb-4">
-                    Exemplos de Orçamentos Profissionais
-                  </DialogTitle>
-                  <p className="text-gray-600 text-center">
-                    Veja a qualidade dos orçamentos que você pode criar com o OrçaFácil
-                  </p>
-                </DialogHeader>
-                
-                <div className="mt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {budgetExamples.map((example, index) => (
-                      <Card 
-                        key={example.id} 
-                        className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                      >
-                        <div className="relative">
-                          <img 
-                            src={example.image} 
-                            alt={example.title}
-                            className="w-full h-48 object-cover rounded-t-lg"
-                          />
-                          <Badge className="absolute top-3 left-3 bg-blue-500 text-white">
-                            {example.category}
-                          </Badge>
-                        </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold text-lg mb-2">{example.title}</h3>
-                          <p className="text-gray-600 text-sm mb-3">{example.description}</p>
-                          
-                          <div className="space-y-2 mb-4">
-                            <h4 className="font-medium text-sm text-gray-700">Itens inclusos:</h4>
-                            <ul className="text-xs text-gray-600 space-y-1">
-                              {example.items.map((item, idx) => (
-                                <li key={idx} className="flex items-center">
-                                  <Check className="w-3 h-3 text-green-500 mr-1" />
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div className="flex justify-between items-center pt-3 border-t">
-                            <span className="text-lg font-bold text-blue-600">{example.value}</span>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => openBudgetModal(example.id)}
-                            >
-                              <FileText className="w-4 h-4 mr-1" />
-                              Ver PDF
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-8 text-center">
-                    <p className="text-gray-600 mb-4">
-                      Pronto para criar orçamentos como estes?
-                    </p>
-                    <Link to="/signup">
-                      <Button className="bg-blue-500 hover:bg-blue-600">
-                        Começar Agora - Teste Grátis
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link to="/exemplos">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                <Eye className="w-5 h-5 mr-2" />
+                Ver Exemplos de Orçamentos
+              </Button>
+            </Link>
           </div>
           
           {/* Dashboard Preview */}
@@ -494,17 +417,7 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* PDF Preview Modal */}
-      <Modal
-        isOpen={!!selectedBudget}
-        onClose={closeBudgetModal}
-        title={selectedBudget ? `Prévia do Orçamento - ${selectedBudget.title}` : ''}
-        className="max-w-5xl"
-      >
-        {selectedBudget && (
-          <PdfPreview budget={selectedBudget} onClose={closeBudgetModal} />
-        )}
-      </Modal>
+      
     </div>
   );
 };

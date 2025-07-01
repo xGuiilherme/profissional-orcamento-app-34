@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import PdfPreview from '@/components/PdfPreview';
+import { BudgetData } from '@/hooks/useBudgetData';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,12 +29,42 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+interface FormItem {
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+  type: 'material' | 'labor';
+}
+
 const NovoOrcamento = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
+  interface FormDataState {
+    clientName: string;
+    clientPhone: string;
+    clientEmail: string;
+    clientAddress: string;
+    observations: string;
+    profession: string;
+    template: string;
+    items: FormItem[];
+    deadline: string;
+    payment: string;
+    warranty: string;
+    generalObservations: string;
+    validity: string;
+    subtotalMaterials: number;
+    subtotalLabor: number;
+    discount: number;
+    total: number;
+  }
+
+  const [formData, setFormData] = useState<FormDataState>({
     // Etapa 1 - Cliente
     clientName: '',
     clientPhone: '',
@@ -102,11 +134,11 @@ const NovoOrcamento = () => {
 
   const units = ['un', 'm²', 'm', 'kg', 'l', 'pç', 'h'];
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof FormDataState, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (index: number, field: keyof FormItem, value: string | number) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
     
@@ -132,7 +164,7 @@ const NovoOrcamento = () => {
     calculateTotals(newItems);
   };
 
-  const calculateTotals = (items: any[]) => {
+  const calculateTotals = (items: FormItem[]) => {
     const subtotalMaterials = items
       .filter(item => item.type === 'material')
       .reduce((sum, item) => sum + item.total, 0);
@@ -503,102 +535,31 @@ const NovoOrcamento = () => {
         );
 
       case 5:
+        { const budgetData: BudgetData = {
+          id: Date.now(),
+          clientName: formData.clientName,
+          clientAddress: formData.clientAddress,
+          clientPhone: formData.clientPhone,
+          clientEmail: formData.clientEmail,
+          title: formData.template || 'Serviço Personalizado',
+          category: formData.profession,
+          description: formData.generalObservations || 'Serviços e materiais conforme listado abaixo.',
+          items: formData.items.map(i => i.description),
+          value: `R$ ${formData.total.toFixed(2).replace('.', ',')}`,
+          terms: formData.payment,
+          validity: `${formData.validity} dias`,
+        };
+
         return (
-          <div className="space-y-6">
-            <div className="bg-white border rounded-lg p-8 shadow-sm">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">ORÇAMENTO</h2>
-                <p className="text-gray-600">#{Date.now().toString().slice(-6)}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Dados do Cliente</h3>
-                  <p className="text-gray-700">{formData.clientName}</p>
-                  <p className="text-gray-700">{formData.clientPhone}</p>
-                  {formData.clientEmail && <p className="text-gray-700">{formData.clientEmail}</p>}
-                  <p className="text-gray-700 text-sm mt-2">{formData.clientAddress}</p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">Informações do Serviço</h3>
-                  <p className="text-gray-700">Profissão: {formData.profession}</p>
-                  <p className="text-gray-700">Template: {formData.template}</p>
-                  <p className="text-gray-700">Prazo: {formData.deadline}</p>
-                  <p className="text-gray-700">Pagamento: {formData.payment}</p>
-                  <p className="text-gray-700">Garantia: {formData.warranty}</p>
-                </div>
-              </div>
-
-              <div className="mb-8">
-                <h3 className="font-semibold text-gray-900 mb-4">Itens do Orçamento</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-2 px-2">Descrição</th>
-                        <th className="text-left py-2 px-2">Tipo</th>
-                        <th className="text-right py-2 px-2">Qtd</th>
-                        <th className="text-center py-2 px-2">Un</th>
-                        <th className="text-right py-2 px-2">Valor Unit.</th>
-                        <th className="text-right py-2 px-2">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {formData.items.map((item, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="py-2 px-2">{item.description}</td>
-                          <td className="py-2 px-2">
-                            <Badge variant={item.type === 'material' ? 'secondary' : 'outline'}>
-                              {item.type === 'material' ? 'Material' : 'Mão de obra'}
-                            </Badge>
-                          </td>
-                          <td className="text-right py-2 px-2">{item.quantity}</td>
-                          <td className="text-center py-2 px-2">{item.unit}</td>
-                          <td className="text-right py-2 px-2">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                          <td className="text-right py-2 px-2 font-semibold">R$ {item.total.toFixed(2).replace('.', ',')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal Materiais:</span>
-                  <span>R$ {formData.subtotalMaterials.toFixed(2).replace('.', ',')}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span>Subtotal Mão de Obra:</span>
-                  <span>R$ {formData.subtotalLabor.toFixed(2).replace('.', ',')}</span>
-                </div>
-                {formData.discount > 0 && (
-                  <div className="flex justify-between items-center mb-2 text-red-600">
-                    <span>Desconto ({formData.discount}%):</span>
-                    <span>- R$ {((formData.subtotalMaterials + formData.subtotalLabor) * formData.discount / 100).toFixed(2).replace('.', ',')}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
-                  <span>TOTAL GERAL:</span>
-                  <span className="text-green-600">R$ {formData.total.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-
-              {formData.generalObservations && (
-                <div className="mt-6">
-                  <h3 className="font-semibold text-gray-900 mb-2">Observações</h3>
-                  <p className="text-gray-700 text-sm">{formData.generalObservations}</p>
-                </div>
-              )}
-
-              <div className="text-center mt-8 text-sm text-gray-600">
-                <p>Orçamento válido por {formData.validity} dias</p>
-                <p>Data: {new Date().toLocaleDateString('pt-BR')}</p>
-              </div>
-            </div>
+          <div className="text-center">
+            <Button onClick={() => setIsPreviewOpen(true)}>Visualizar Prévia</Button>
+            <PdfPreview
+              budget={budgetData}
+              isOpen={isPreviewOpen}
+              onClose={() => setIsPreviewOpen(false)}
+            />
           </div>
-        );
+        ); }
 
       default:
         return null;
