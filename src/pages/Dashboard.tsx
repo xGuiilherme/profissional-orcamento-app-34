@@ -1,4 +1,4 @@
-
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -116,18 +116,18 @@ const Dashboard = () => {
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Bem-vindo de volta, Carlos! Aqui está o resumo do seu negócio.</p>
-        </div>
-        <Link to="/orcamento/novo">
-          <Button className="mt-4 sm:mt-0 bg-blue-500 hover:bg-blue-600">
-            <FileText className="w-4 h-4 mr-2" />
-            Novo Orçamento
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Bem-vindo de volta! Aqui está o resumo do seu negócio."
+        actionComponent={
+          <Link to="/orcamento/novo">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              <FileText className="w-4 h-4 mr-2" />
+              Novo Orçamento
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

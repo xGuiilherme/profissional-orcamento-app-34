@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient'; // Importe o cliente Supabase
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconInput } from '@/components/ui/IconInput';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calculator, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { signInUser, signInWithGoogle } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -28,33 +30,20 @@ const Login = () => {
     }));
   };
 
-  // ✅ FUNÇÃO NOVA: Lidar com o Login com Google
   const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
-    if (error) {
-      toast.error("Erro no login com Google", {
-        description: error.message});
-      setIsGoogleLoading(false);
-    }
+    setIsLoading(true);
+    const { error } = await signInWithGoogle();
+    if (error) { toast.error("Erro no login com Google", { description: error.message }); }
+    setIsLoading(false);
   };
 
-  // ✅ FUNÇÃO MODIFICADA: Lidar com o Login com E-mail e Senha
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
-    });
-
+    const { error } = await signInUser(formData);
     if (error) {
-      toast.error("Erro no login", {
-        description: "Verifique seu e-mail e senha.",
-      });
+      toast.error("Erro no login", { description: "Verifique seu e-mail e senha." });
     } else {
       toast.success("Login realizado com sucesso!");
       navigate('/dashboard');
@@ -83,9 +72,7 @@ const Login = () => {
               Entre para gerenciar seus orçamentos
             </p>
           </CardHeader>
-          
           <CardContent>
-            {/* ✅ BOTÃO NOVO: Botão de Login com Google */}
             <Button
               variant="outline"
               className="w-full mb-4 bg-white hover:bg-gray-50 text-gray-700 shadow-sm border-gray-300"
@@ -94,7 +81,6 @@ const Login = () => {
             >
               {isGoogleLoading ? "Aguarde..." : (
                 <>
-                  {/* ✅ SVG do Logo Colorido do Google */}
                   <svg
                     className="mr-2 h-4 w-4"
                     aria-hidden="true"
@@ -134,19 +120,15 @@ const Login = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* O resto do formulário permanece o mesmo */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input id="email" name="email" type="email" placeholder="seu@email.com" value={formData.email} onChange={handleChange} className="pl-10" required />
-                </div>
+                <IconInput icon={Mail} id="email" name="email" type="email" placeholder="Digite Seu E-mail" value={formData.email} onChange={handleChange} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Sua senha" value={formData.password} onChange={handleChange} className="pl-10 pr-10" required />
+                  <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Digite Sua Senha" value={formData.password} onChange={handleChange} className="pl-10 pr-10" required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>

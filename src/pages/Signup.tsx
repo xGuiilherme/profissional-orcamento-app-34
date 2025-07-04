@@ -1,13 +1,16 @@
 import { supabase } from '@/lib/supabaseClient';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { IconInput } from '@/components/ui/IconInput';
 import { Calculator, User, Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
+import { signupSchema, type SignupFormData } from '@/lib/validations';
 import { toast } from 'sonner';
 
 const Signup = () => {
@@ -24,6 +27,7 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUpUser } = useAuth();
 
   const professions = [
     "Eletricista",
@@ -137,44 +141,17 @@ const Signup = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Nome completo</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    type="text"
-                    placeholder="Seu nome completo"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
+                <IconInput icon={User} id="fullName" name="fullName" type="text" placeholder="Digite seu nome completo" value={formData.fullName} onChange={handleChange} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
+                <IconInput icon={Mail} id="email" name="email" type="email" placeholder="seu@email.com" value={formData.email} onChange={handleChange} required />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="profession">Profissão</Label>
-                <Select
-                  value={formData.profession}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, profession: value }))}
-                >
+                <Select value={formData.profession} onValueChange={(value) => setFormData(prev => ({ ...prev, profession: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione sua profissão" />
                   </SelectTrigger>
@@ -190,19 +167,7 @@ const Signup = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="phone">WhatsApp</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="(11) 99999-9999"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
+                <IconInput icon={Phone} id="phone" name="phone" type="tel" placeholder="(11) 99999-9999" value={formData.phone} onChange={handleChange} required />
               </div>
 
               <div className="space-y-2">
