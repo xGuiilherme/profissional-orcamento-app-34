@@ -13,6 +13,12 @@ import { toast } from 'sonner';
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false
+  });
   const navigate = useNavigate();
   const { signInUser, signInWithGoogle } = useAuth();
 
