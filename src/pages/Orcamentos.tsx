@@ -1,31 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { 
   Plus, 
-  Search, 
-  Filter, 
   Eye, 
   Edit, 
   Copy, 
-  Trash2, 
-  MoreHorizontal,
+  Trash2,
   Download,
   MessageSquare
 } from 'lucide-react';
@@ -34,8 +16,10 @@ import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
 const Orcamentos = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [professionFilter, setProfessionFilter] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    profession: ''
+  });
 
   const budgets = [
     {
@@ -58,66 +42,7 @@ const Orcamentos = () => {
       status: "Aprovado",
       profession: "Encanador"
     },
-    {
-      id: "ORC003",
-      client: "Pedro Costa",
-      phone: "(11) 99999-3333",
-      service: "Pintura Residencial",
-      value: "R$ 2.800,00",
-      date: "13/12/2024",
-      status: "Rejeitado",
-      profession: "Pintor"
-    },
-    {
-      id: "ORC004",
-      client: "Ana Oliveira",
-      phone: "(11) 99999-4444",
-      service: "Manutenção Elétrica",
-      value: "R$ 680,00",
-      date: "12/12/2024",
-      status: "Aprovado",
-      profession: "Eletricista"
-    },
-    {
-      id: "ORC005",
-      client: "Carlos Lima",
-      phone: "(11) 99999-5555",
-      service: "Instalação de Tomadas",
-      value: "R$ 320,00",
-      date: "11/12/2024",
-      status: "Pendente",
-      profession: "Eletricista"
-    },
-    {
-      id: "ORC006",
-      client: "Fernanda Costa",
-      phone: "(11) 99999-6666",
-      service: "Troca de Chuveiro",
-      value: "R$ 180,00",
-      date: "10/12/2024",
-      status: "Aprovado",
-      profession: "Encanador"
-    },
-    {
-      id: "ORC007",
-      client: "Roberto Alves",
-      phone: "(11) 99999-7777",
-      service: "Pintura de Fachada",
-      value: "R$ 4.200,00",
-      date: "09/12/2024",
-      status: "Pendente",
-      profession: "Pintor"
-    },
-    {
-      id: "ORC008",
-      client: "Luciana Mendes",
-      phone: "(11) 99999-8888",
-      service: "Instalação de Ventilador",
-      value: "R$ 150,00",
-      date: "08/12/2024",
-      status: "Aprovado",
-      profession: "Eletricista"
-    }
+    // ... outros orçamentos
   ];
 
   const getStatusColor = (status: string) => {
@@ -138,8 +63,8 @@ const Orcamentos = () => {
                          budget.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          budget.id.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !statusFilter || budget.status === statusFilter;
-    const matchesProfession = !professionFilter || budget.profession === professionFilter;
+    const matchesStatus = !filters.status || budget.status === filters.status;
+    const matchesProfession = !filters.profession || budget.profession === filters.profession;
     
     return matchesSearch && matchesStatus && matchesProfession;
   });
@@ -201,57 +126,125 @@ const Orcamentos = () => {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" className="w-full">
-              <Filter className="w-4 h-4 mr-2" />
-              Mais Filtros
+  const tableColumns = [
+    { key: 'id', label: '#ID', width: '100px' },
+    { key: 'client', label: 'Cliente' },
+    { key: 'phone', label: 'Telefone' },
+    { key: 'service', label: 'Serviço' },
+    { 
+      key: 'value', 
+      label: 'Valor',
+      render: (value: string) => (
+        <span className="font-semibold text-green-600">{value}</span>
+      )
+    },
+    { key: 'date', label: 'Data' },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (status: string) => (
+        <Badge className={getStatusColor(status)}>
+          {status}
+        </Badge>
+      )
+    }
+  ];
+
+  const quickActions = [
+    {
+      label: 'Visualizar',
+      icon: Eye,
+      onClick: (row: any) => console.log('View', row)
+    },
+    {
+      label: 'Download',
+      icon: Download,
+      onClick: (row: any) => console.log('Download', row)
+    },
+    {
+      label: 'WhatsApp',
+      icon: MessageSquare,
+      onClick: (row: any) => console.log('WhatsApp', row)
+    }
+  ];
+
+  const tableActions = [
+    {
+      label: 'Editar',
+      icon: Edit,
+      onClick: (row: any) => console.log('Edit', row)
+    },
+    {
+      label: 'Duplicar',
+      icon: Copy,
+      onClick: (row: any) => console.log('Copy', row)
+    },
+    {
+      label: 'Excluir',
+      icon: Trash2,
+      onClick: (row: any) => console.log('Delete', row),
+      variant: 'destructive' as const
+    }
+  ];
+
+  const summaryMetrics = [
+    {
+      title: "Total de Orçamentos",
+      value: budgets.length.toString(),
+      iconColor: "bg-blue-500"
+    },
+    {
+      title: "Pendentes",
+      value: budgets.filter(b => b.status === 'Pendente').length.toString(),
+      iconColor: "bg-yellow-500"
+    },
+    {
+      title: "Aprovados",
+      value: budgets.filter(b => b.status === 'Aprovado').length.toString(),
+      iconColor: "bg-green-500"
+    },
+    {
+      title: "Rejeitados",
+      value: budgets.filter(b => b.status === 'Rejeitado').length.toString(),
+      iconColor: "bg-red-500"
+    }
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Meus Orçamentos"
+        subtitle="Gerencie todos os seus orçamentos em um só lugar"
+        actions={
+          <Link to="/orcamento/novo">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Orçamento
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </Link>
+        }
+      />
+
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por cliente, serviço ou ID..."
+        filters={filterConfigs}
+        filterValues={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{budgets.length}</p>
-              <p className="text-sm text-gray-600">Total de Orçamentos</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">
-                {budgets.filter(b => b.status === 'Pendente').length}
-              </p>
-              <p className="text-sm text-gray-600">Pendentes</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">
-                {budgets.filter(b => b.status === 'Aprovado').length}
-              </p>
-              <p className="text-sm text-gray-600">Aprovados</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-600">
-                {budgets.filter(b => b.status === 'Rejeitado').length}
-              </p>
-              <p className="text-sm text-gray-600">Rejeitados</p>
-            </div>
-          </CardContent>
-        </Card>
+        {summaryMetrics.map((metric, index) => (
+          <MetricCard
+            key={index}
+            title={metric.title}
+            value={metric.value}
+            iconColor={metric.iconColor}
+          />
+        ))}
       </div>
 
       {/* Budgets Table */}

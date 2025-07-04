@@ -11,12 +11,6 @@ import { Calculator, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
-  });
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const navigate = useNavigate();
