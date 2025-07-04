@@ -23,6 +23,7 @@ const Signup = () => {
     phone: '',
     acceptTerms: false
   });
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
