@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
   Eye, 
@@ -9,9 +13,14 @@ import {
   Copy, 
   Trash2,
   Download,
-  MessageSquare
+  MessageSquare,
+  Search,
+  MoreHorizontal
 } from 'lucide-react';
 import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { FilterBar } from '@/components/layout/FilterBar';
+import { MetricCard } from '@/components/layout/MetricCard';
 
 const Orcamentos = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -42,7 +51,6 @@ const Orcamentos = () => {
       status: "Aprovado",
       profession: "Encanador"
     },
-    // ... outros orçamentos
   ];
 
   const getStatusColor = (status: string) => {
@@ -58,132 +66,41 @@ const Orcamentos = () => {
     }
   };
 
-  const filteredBudgets = budgets.filter(budget => {
-    const matchesSearch = budget.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         budget.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         budget.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = !filters.status || budget.status === filters.status;
-    const matchesProfession = !filters.profession || budget.profession === filters.profession;
-    
-    return matchesSearch && matchesStatus && matchesProfession;
-  });
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meus Orçamentos</h1>
-          <p className="text-gray-600 mt-1">Gerencie todos os seus orçamentos em um só lugar</p>
-        </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button variant="outline" onClick={() => setIsTemplateModalOpen(true)}>
-            Criar com Template
-          </Button>
-          <Link to="/orcamento/novo">
-            <Button className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Orçamento
-            </Button>
-          </Link>
-        </div>
-      </div>
+  const clearFilters = () => {
+    setFilters({
+      status: '',
+      profession: ''
+    });
+    setSearchTerm('');
+  };
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar por cliente, serviço ou ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Aprovado">Aprovado</SelectItem>
-                <SelectItem value="Rejeitado">Rejeitado</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={professionFilter} onValueChange={setProfessionFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtrar por profissão" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Eletricista">Eletricista</SelectItem>
-                <SelectItem value="Encanador">Encanador</SelectItem>
-                <SelectItem value="Pintor">Pintor</SelectItem>
-              </SelectContent>
-            </Select>
-
-  const tableColumns = [
-    { key: 'id', label: '#ID', width: '100px' },
-    { key: 'client', label: 'Cliente' },
-    { key: 'phone', label: 'Telefone' },
-    { key: 'service', label: 'Serviço' },
-    { 
-      key: 'value', 
-      label: 'Valor',
-      render: (value: string) => (
-        <span className="font-semibold text-green-600">{value}</span>
-      )
-    },
-    { key: 'date', label: 'Data' },
-    { 
-      key: 'status', 
+  const filterConfigs = [
+    {
+      key: 'status',
       label: 'Status',
-      render: (status: string) => (
-        <Badge className={getStatusColor(status)}>
-          {status}
-        </Badge>
-      )
-    }
-  ];
-
-  const quickActions = [
-    {
-      label: 'Visualizar',
-      icon: Eye,
-      onClick: (row: any) => console.log('View', row)
+      type: 'select' as const,
+      options: [
+        { value: 'Pendente', label: 'Pendente' },
+        { value: 'Aprovado', label: 'Aprovado' },
+        { value: 'Rejeitado', label: 'Rejeitado' }
+      ]
     },
     {
-      label: 'Download',
-      icon: Download,
-      onClick: (row: any) => console.log('Download', row)
-    },
-    {
-      label: 'WhatsApp',
-      icon: MessageSquare,
-      onClick: (row: any) => console.log('WhatsApp', row)
-    }
-  ];
-
-  const tableActions = [
-    {
-      label: 'Editar',
-      icon: Edit,
-      onClick: (row: any) => console.log('Edit', row)
-    },
-    {
-      label: 'Duplicar',
-      icon: Copy,
-      onClick: (row: any) => console.log('Copy', row)
-    },
-    {
-      label: 'Excluir',
-      icon: Trash2,
-      onClick: (row: any) => console.log('Delete', row),
-      variant: 'destructive' as const
+      key: 'profession',
+      label: 'Profissão',
+      type: 'select' as const,
+      options: [
+        { value: 'Eletricista', label: 'Eletricista' },
+        { value: 'Encanador', label: 'Encanador' },
+        { value: 'Pintor', label: 'Pintor' }
+      ]
     }
   ];
 
@@ -210,18 +127,34 @@ const Orcamentos = () => {
     }
   ];
 
+  const filteredBudgets = budgets.filter(budget => {
+    const matchesSearch = budget.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         budget.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         budget.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = !filters.status || budget.status === filters.status;
+    const matchesProfession = !filters.profession || budget.profession === filters.profession;
+    
+    return matchesSearch && matchesStatus && matchesProfession;
+  });
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
         title="Meus Orçamentos"
         subtitle="Gerencie todos os seus orçamentos em um só lugar"
         actions={
-          <Link to="/orcamento/novo">
-            <Button className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Orçamento
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsTemplateModalOpen(true)}>
+              Criar com Template
             </Button>
-          </Link>
+            <Link to="/orcamento/novo">
+              <Button className="bg-blue-500 hover:bg-blue-600">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Orçamento
+              </Button>
+            </Link>
+          </div>
         }
       />
 
