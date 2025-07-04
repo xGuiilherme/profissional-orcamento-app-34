@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calculator, User, Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -24,7 +24,6 @@ const Signup = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const professions = [
     "Eletricista",
@@ -40,6 +39,11 @@ const Signup = () => {
     "Outros"
   ];
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -52,31 +56,33 @@ const Signup = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Erro no cadastro",
-        description: "As senhas não coincidem.",
-        variant: "destructive",
+    if (!isValidEmail(formData.email)) {
+      toast.error("Erro no cadastro", {
+        description: "Por favor, insira um endereço de e-mail válido.",
       });
       setIsLoading(false);
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Erro no cadastro", {
+        description: "As senhas não coincidem.",
+        });
+      setIsLoading(false);
+      return;
+    }
+
     if (formData.password.length < 8) {
-      toast({
-        title: "Erro no cadastro",
-        description: "A senha deve ter pelo menos 8 caracteres.",
-        variant: "destructive",
+      toast.error("Erro no cadastro", {
+        description: "A senha deve ter pelo menos 8 caracteres."
       });
       setIsLoading(false);
       return;
     }
 
     if (!formData.acceptTerms) {
-      toast({
-        title: "Erro no cadastro",
+      toast.error("Erro no cadastro", {
         description: "Você deve aceitar os termos de uso.",
-        variant: "destructive",
       });
       setIsLoading(false);
       return;
@@ -94,10 +100,10 @@ const Signup = () => {
     });
 
     if (error) {
-      toast({ title: "Erro no cadastro", description: error.message, variant: "destructive" });
+      toast.error("Erro no cadastro", {
+        description: error.message});
     } else if (data.user) {
-      toast({
-        title: "Conta criada com sucesso!",
+      toast.success("Conta criada com sucesso!", {
         description: "Enviamos um link de confirmação para o seu e-mail.",
       });
       navigate('/login');
