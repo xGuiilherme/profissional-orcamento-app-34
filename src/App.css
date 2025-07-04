@@ -40,3 +40,37 @@
 .read-the-docs {
   color: #888;
 }
+
+/* TOAST */
+progress-toast {
+  position: relative;
+  overflow: hidden;
+}
+
+.toast-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  animation: toast-progress linear forwards;
+}
+
+/* Cores dinâmicas baseadas no tipo */
+.progress-toast .toast-progress-bar {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.progress-toast.error .toast-progress-bar {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.progress-toast.success .toast-progress-bar {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}

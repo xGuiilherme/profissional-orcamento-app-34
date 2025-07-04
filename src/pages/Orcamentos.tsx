@@ -11,9 +11,10 @@ import {
   Download,
   MessageSquare
 } from 'lucide-react';
-import { PageHeader, MetricCard, DataTable, FilterBar } from '@/components';
+import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
 
 const Orcamentos = () => {
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     status: '',
@@ -68,39 +69,62 @@ const Orcamentos = () => {
     return matchesSearch && matchesStatus && matchesProfession;
   });
 
-  const filterConfigs = [
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select' as const,
-      options: [
-        { value: 'Pendente', label: 'Pendente' },
-        { value: 'Aprovado', label: 'Aprovado' },
-        { value: 'Rejeitado', label: 'Rejeitado' }
-      ],
-      placeholder: 'Filtrar por status'
-    },
-    {
-      key: 'profession',
-      label: 'Profissão',
-      type: 'select' as const,
-      options: [
-        { value: 'Eletricista', label: 'Eletricista' },
-        { value: 'Encanador', label: 'Encanador' },
-        { value: 'Pintor', label: 'Pintor' }
-      ],
-      placeholder: 'Filtrar por profissão'
-    }
-  ];
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Meus Orçamentos</h1>
+          <p className="text-gray-600 mt-1">Gerencie todos os seus orçamentos em um só lugar</p>
+        </div>
+        <div className="flex gap-2 mt-4 sm:mt-0">
+          <Button variant="outline" onClick={() => setIsTemplateModalOpen(true)}>
+            Criar com Template
+          </Button>
+          <Link to="/orcamento/novo">
+            <Button className="bg-blue-500 hover:bg-blue-600">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Orçamento
+            </Button>
+          </Link>
+        </div>
+      </div>
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por cliente, serviço ou ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pendente">Pendente</SelectItem>
+                <SelectItem value="Aprovado">Aprovado</SelectItem>
+                <SelectItem value="Rejeitado">Rejeitado</SelectItem>
+              </SelectContent>
+            </Select>
 
-  const clearFilters = () => {
-    setFilters({ status: '', profession: '' });
-    setSearchTerm('');
-  };
+            <Select value={professionFilter} onValueChange={setProfessionFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por profissão" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Eletricista">Eletricista</SelectItem>
+                <SelectItem value="Encanador">Encanador</SelectItem>
+                <SelectItem value="Pintor">Pintor</SelectItem>
+              </SelectContent>
+            </Select>
 
   const tableColumns = [
     { key: 'id', label: '#ID', width: '100px' },
@@ -223,12 +247,92 @@ const Orcamentos = () => {
         ))}
       </div>
 
-      <DataTable
-        title={`Orçamentos (${filteredBudgets.length})`}
-        data={filteredBudgets}
-        columns={tableColumns}
-        actions={[...quickActions, ...tableActions]}
-        emptyMessage="Nenhum orçamento encontrado com os filtros aplicados."
+      {/* Budgets Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Orçamentos ({filteredBudgets.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">#ID</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Cliente</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Telefone</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Serviço</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Valor</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Data</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Status</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBudgets.map((budget) => (
+                  <tr key={budget.id} className="border-b hover:bg-gray-50">
+                    <td className="py-3 px-2 font-mono text-sm text-blue-600">{budget.id}</td>
+                    <td className="py-3 px-2 font-medium">{budget.client}</td>
+                    <td className="py-3 px-2 text-gray-600">{budget.phone}</td>
+                    <td className="py-3 px-2 text-gray-600">{budget.service}</td>
+                    <td className="py-3 px-2 font-semibold text-green-600">{budget.value}</td>
+                    <td className="py-3 px-2 text-gray-600">{budget.date}</td>
+                    <td className="py-3 px-2">
+                      <Badge className={getStatusColor(budget.status)}>
+                        {budget.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredBudgets.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Nenhum orçamento encontrado com os filtros aplicados.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal de seleção de template */}
+      <TemplateSelectionModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
       />
     </div>
   );

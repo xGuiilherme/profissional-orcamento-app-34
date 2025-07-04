@@ -33,7 +33,7 @@ const Templates = () => {
   
   const [templateData, setTemplateData] = useState({
     // Identidade Visual
-    logo: null as File | null,
+    logo: undefined,
     primaryColor: '#2563eb',
     secondaryColor: '#64748b',
     font: 'Sistema',
@@ -46,8 +46,8 @@ const Templates = () => {
     
     // Informações Padrão
     validityDays: 30,
-    defaultObservations: 'Ex: Valores válidos por 30 dias...',
-    paymentTerms: 'PIX, Cartão, Boleto...',
+    defaultObservations: '',
+    paymentTerms: '',
     
     // Layout
     templateStyle: 'moderno'
@@ -128,7 +128,7 @@ const Templates = () => {
               {/* Logo da Empresa */}
               <div className="space-y-2">
                 <Label>Logo da Empresa</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                   {templateData.logo ? (
                     <div className="flex items-center justify-center space-x-3">
                       <FileText className="w-8 h-8 text-blue-500" />
@@ -238,7 +238,7 @@ const Templates = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="defaultObservations">Observações Padrão</Label>
+                <Label htmlFor="defaultObservations">Observações Importantes</Label>
                 <Textarea
                   id="defaultObservations"
                   value={templateData.defaultObservations}
@@ -250,12 +250,19 @@ const Templates = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="paymentTerms">Formas de Pagamento</Label>
-                <Input
-                  id="paymentTerms"
-                  value={templateData.paymentTerms}
-                  onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
-                  placeholder="PIX, Cartão, Boleto..."
-                />
+                <Select value={templateData.paymentTerms} 
+                    onValueChange={(value) => handleInputChange('paymentTerms', value)}
+                >
+                <SelectTrigger>
+                    <SelectValue placeholder="Selecione a forma de pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="50% entrada + 50% na conclusão">50% entrada + 50% na conclusão</SelectItem>
+                    <SelectItem value="30% entrada + 70% na conclusão">30% entrada + 70% na conclusão</SelectItem>
+                    <SelectItem value="Cartão Débito/Crédito (3x sem juros)">Cartão Débito/Crédito (3x sem juros)</SelectItem>
+                    <SelectItem value="PIX">PIX</SelectItem>
+                </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -400,8 +407,11 @@ const Templates = () => {
 
                 {/* Observações */}
                 <div className="text-xs text-gray-600 border-t pt-4">
-                  <p><strong>Observações:</strong> {templateData.defaultObservations}</p>
-                  <p><strong>Validade:</strong> {templateData.validityDays} dias. <strong>Forma de pagamento:</strong> {templateData.paymentTerms}</p>
+                  <p>
+                    <strong>Observações:</strong> {templateData.defaultObservations || 'Nenhuma observação informada.'} <br/>
+                    <strong>Validade:</strong> {templateData.validityDays} dias. <br/>
+                    <strong>Forma de pagamento:</strong> {templateData.paymentTerms || 'Não selecionado.'}
+                  </p>
                 </div>
               </div>
             </CardContent>

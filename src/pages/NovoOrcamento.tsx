@@ -1,201 +1,66 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+// Lógica e Tipos do Formulário
+import { orcamentoFormReducer, initialState, type FormDataState } from '@/reducers/orcamentoFormReducer';
+
+// Constantes
+import { STEPS, PROFESSIONS, UNITS } from '../constants/orcamentoConst';
+
+// Hooks
+import { useTemplateData } from '@/hooks/useTemplateData';
+import { useToast } from '@/hooks/use-toast';
+import { type BudgetData } from '@/hooks/useBudgetData';
+
+// Componentes de UI
 import PdfPreview from '@/components/PdfPreview';
-import { BudgetData } from '@/hooks/useBudgetData';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle,
-  User,
-  Wrench,
-  Calculator,
-  FileText,
-  Eye,
-  Plus,
-  Trash2
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-
-interface FormItem {
-  description: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  total: number;
-  type: 'material' | 'labor';
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, ArrowRight, CheckCircle, Plus, Trash2 } from 'lucide-react';
 
 const NovoOrcamento = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { templateId } = useParams<{ templateId: string }>();
 
-  interface FormDataState {
-    clientName: string;
-    clientPhone: string;
-    clientEmail: string;
-    clientAddress: string;
-    observations: string;
-    profession: string;
-    template: string;
-    items: FormItem[];
-    deadline: string;
-    payment: string;
-    warranty: string;
-    generalObservations: string;
-    validity: string;
-    subtotalMaterials: number;
-    subtotalLabor: number;
-    discount: number;
-    total: number;
-  }
+  const { getTemplateById, getTemplatesByProfession } = useTemplateData();
+  const [formData, dispatch] = useReducer(orcamentoFormReducer, initialState);
 
-  const [formData, setFormData] = useState<FormDataState>({
-    // Etapa 1 - Cliente
-    clientName: '',
-    clientPhone: '',
-    clientEmail: '',
-    clientAddress: '',
-    observations: '',
-    
-    // Etapa 2 - Serviço
-    profession: '',
-    template: '',
-    
-    // Etapa 3 - Itens
-    items: [
-      { description: '', quantity: 1, unit: 'un', unitPrice: 0, total: 0, type: 'material' }
-    ],
-    
-    // Etapa 4 - Condições
-    deadline: '',
-    payment: '',
-    warranty: '',
-    generalObservations: '',
-    validity: '30',
-    
-    // Calculados
-    subtotalMaterials: 0,
-    subtotalLabor: 0,
-    discount: 0,
-    total: 0
-  });
-
-  const steps = [
-    { number: 1, title: 'Dados do Cliente', icon: User },
-    { number: 2, title: 'Tipo de Serviço', icon: Wrench },
-    { number: 3, title: 'Serviços e Materiais', icon: Calculator },
-    { number: 4, title: 'Condições', icon: FileText },
-    { number: 5, title: 'Preview', icon: Eye }
-  ];
-
-  const professions = [
-    { value: 'eletricista', label: 'Eletricista' },
-    { value: 'encanador', label: 'Encanador' },
-    { value: 'pintor', label: 'Pintor' },
-    { value: 'pedreiro', label: 'Pedreiro' },
-    { value: 'marceneiro', label: 'Marceneiro' }
-  ];
-
-  const templates = {
-    eletricista: [
-      'Instalação Elétrica Residencial',
-      'Manutenção e Reparo',
-      'Instalação de Tomadas e Interruptores',
-      'Quadro Elétrico'
-    ],
-    encanador: [
-      'Instalação Hidráulica',
-      'Reparo de Vazamentos',
-      'Desentupimento',
-      'Troca de Registros'
-    ],
-    pintor: [
-      'Pintura Interna',
-      'Pintura Externa',
-      'Pintura de Fachada',
-      'Textura e Acabamentos'
-    ]
-  };
-
-  const units = ['un', 'm²', 'm', 'kg', 'l', 'pç', 'h'];
-
-  const handleInputChange = (field: keyof FormDataState, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleItemChange = (index: number, field: keyof FormItem, value: string | number) => {
-    const newItems = [...formData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    
-    // Calcular total do item
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
+  useEffect(() => {
+    if (templateId) {
+      const template = getTemplateById(templateId);
+      if (template) {
+        const itemsWithTotal = template.items.map(item => ({
+          ...item,
+          total: item.quantity * item.unitPrice,
+        }));
+        dispatch({
+          type: 'SET_FROM_TEMPLATE',
+          payload: {
+            ...initialState,
+            profession: template.profession,
+            template: template.name,
+            items: itemsWithTotal,
+            deadline: template.deadline,
+            payment: template.payment,
+            warranty: template.warranty,
+            generalObservations: template.generalObservations,
+            validity: template.validity,
+          },
+        });
+        setCurrentStep(1);
+      }
     }
-    
-    setFormData(prev => ({ ...prev, items: newItems }));
-    calculateTotals(newItems);
-  };
+  }, [templateId, getTemplateById]);
 
-  const addItem = () => {
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, { description: '', quantity: 1, unit: 'un', unitPrice: 0, total: 0, type: 'material' }]
-    }));
-  };
-
-  const removeItem = (index: number) => {
-    const newItems = formData.items.filter((_, i) => i !== index);
-    setFormData(prev => ({ ...prev, items: newItems }));
-    calculateTotals(newItems);
-  };
-
-  const calculateTotals = (items: FormItem[]) => {
-    const subtotalMaterials = items
-      .filter(item => item.type === 'material')
-      .reduce((sum, item) => sum + item.total, 0);
-    
-    const subtotalLabor = items
-      .filter(item => item.type === 'labor')
-      .reduce((sum, item) => sum + item.total, 0);
-    
-    const subtotal = subtotalMaterials + subtotalLabor;
-    const discountAmount = (subtotal * formData.discount) / 100;
-    const total = subtotal - discountAmount;
-    
-    setFormData(prev => ({
-      ...prev,
-      subtotalMaterials,
-      subtotalLabor,
-      total
-    }));
-  };
-
-  const nextStep = () => {
-    if (currentStep < 5) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  const nextStep = () => currentStep < 5 && setCurrentStep(currentStep + 1);
+  const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
   const handleSubmit = () => {
     toast({
@@ -207,7 +72,7 @@ const NovoOrcamento = () => {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1:
+      case 1: {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -216,69 +81,70 @@ const NovoOrcamento = () => {
                 <Input
                   id="clientName"
                   value={formData.clientName}
-                  onChange={(e) => handleInputChange('clientName', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientName', payload: e.target.value })}
                   placeholder="Nome completo do cliente"
                   required
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="clientPhone">Telefone/WhatsApp *</Label>
                 <Input
                   id="clientPhone"
                   value={formData.clientPhone}
-                  onChange={(e) => handleInputChange('clientPhone', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientPhone', payload: e.target.value })}
                   placeholder="(11) 99999-9999"
                   required
                 />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="clientEmail">Email (opcional)</Label>
               <Input
                 id="clientEmail"
                 type="email"
                 value={formData.clientEmail}
-                onChange={(e) => handleInputChange('clientEmail', e.target.value)}
+                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientEmail', payload: e.target.value })}
                 placeholder="cliente@email.com"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="clientAddress">Endereço Completo *</Label>
               <Textarea
                 id="clientAddress"
                 value={formData.clientAddress}
-                onChange={(e) => handleInputChange('clientAddress', e.target.value)}
+                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientAddress', payload: e.target.value })}
                 placeholder="Rua, número, bairro, cidade, CEP"
                 required
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="observations">Observações</Label>
               <Textarea
                 id="observations"
                 value={formData.observations}
-                onChange={(e) => handleInputChange('observations', e.target.value)}
+                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'observations', payload: e.target.value })}
                 placeholder="Informações adicionais sobre o cliente ou local"
               />
             </div>
           </div>
         );
+      }
 
-      case 2:
+      case 2: {
+        const professionTemplates = getTemplatesByProfession(formData.profession);
         return (
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>Profissão *</Label>
-              <Select onValueChange={(value) => handleInputChange('profession', value)}>
+              <Select
+                value={formData.profession || ''}
+                onValueChange={(value) => dispatch({ type: 'UPDATE_FIELD', field: 'profession', payload: value })}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione sua profissão" />
                 </SelectTrigger>
                 <SelectContent>
-                  {professions.map((profession) => (
+                  {PROFESSIONS.map((profession) => (
                     <SelectItem key={profession.value} value={profession.value}>
                       {profession.label}
                     </SelectItem>
@@ -286,48 +152,40 @@ const NovoOrcamento = () => {
                 </SelectContent>
               </Select>
             </div>
-
             {formData.profession && (
               <div className="space-y-2">
                 <Label>Template Base</Label>
-                <Select onValueChange={(value) => handleInputChange('template', value)}>
+                <Select
+                  value={formData.template || ''}
+                  onValueChange={(value) => dispatch({ type: 'UPDATE_FIELD', field: 'template', payload: value })}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Escolha um template" />
+                    <SelectValue placeholder="Escolha um template (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {templates[formData.profession as keyof typeof templates]?.map((template) => (
-                      <SelectItem key={template} value={template}>
-                        {template}
+                    {professionTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.name}>
+                        {template.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
-
-            {formData.template && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Template Selecionado</h4>
-                <p className="text-blue-800">{formData.template}</p>
-                <Button variant="outline" className="mt-3" size="sm">
-                  Personalizar Template
-                </Button>
-              </div>
-            )}
           </div>
         );
+      }
 
-      case 3:
+      case 3: {
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Itens do Orçamento</h3>
-              <Button onClick={addItem} className="bg-green-500 hover:bg-green-600">
+              <Button onClick={() => dispatch({ type: 'ADD_ITEM' })} className="bg-green-500 hover:bg-green-600">
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Item
               </Button>
             </div>
-
             <div className="space-y-4">
               {formData.items.map((item, index) => (
                 <Card key={index}>
@@ -337,82 +195,58 @@ const NovoOrcamento = () => {
                         <Label>Descrição</Label>
                         <Input
                           value={item.description}
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          onChange={(e) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'description', value: e.target.value }})}
                           placeholder="Descrição do item/serviço"
                         />
                       </div>
-                      
                       <div>
                         <Label>Tipo</Label>
-                        <Select 
-                          value={item.type} 
-                          onValueChange={(value) => handleItemChange(index, 'type', value)}
+                        <Select
+                          value={item.type}
+                          onValueChange={(value) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'type', value }})}
                         >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="material">Material</SelectItem>
                             <SelectItem value="labor">Mão de obra</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      
                       <div>
                         <Label>Qtd</Label>
                         <Input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          step="0.01"
+                          onChange={(e) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'quantity', value: parseFloat(e.target.value) || 0 }})}
                         />
                       </div>
-                      
                       <div>
                         <Label>Unidade</Label>
-                        <Select 
-                          value={item.unit} 
-                          onValueChange={(value) => handleItemChange(index, 'unit', value)}
+                        <Select
+                          value={item.unit}
+                          onValueChange={(value) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'unit', value }})}
                         >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {units.map((unit) => (
-                              <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                            ))}
+                            {UNITS.map((unit) => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
-                      
                       <div>
                         <Label>Valor Unit.</Label>
                         <Input
                           type="number"
                           value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                          min="0"
-                          step="0.01"
-                          placeholder="0,00"
+                          onChange={(e) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'unitPrice', value: parseFloat(e.target.value) || 0 }})}
                         />
                       </div>
                     </div>
-                    
                     <div className="flex justify-between items-center mt-4">
                       <div className="text-sm text-gray-600">
-                        Total: <span className="font-semibold text-green-600">
-                          R$ {item.total.toFixed(2).replace('.', ',')}
-                        </span>
+                        Total: <span className="font-semibold text-green-600">R$ {item.total.toFixed(2).replace('.', ',')}</span>
                       </div>
-                      
                       {formData.items.length > 1 && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'REMOVE_ITEM', payload: { index } })} className="text-red-600 hover:text-red-700">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
@@ -421,8 +255,6 @@ const NovoOrcamento = () => {
                 </Card>
               ))}
             </div>
-
-            {/* Totais */}
             <Card className="bg-gray-50">
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -440,20 +272,15 @@ const NovoOrcamento = () => {
                       <Input
                         type="number"
                         value={formData.discount}
-                        onChange={(e) => handleInputChange('discount', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'discount', payload: parseFloat(e.target.value) || 0 })}
                         className="w-20 text-right"
-                        min="0"
-                        max="100"
                       />
                     </div>
                   </div>
-                  
                   <div className="flex items-center justify-center">
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-1">Total Geral</p>
-                      <p className="text-3xl font-bold text-green-600">
-                        R$ {formData.total.toFixed(2).replace('.', ',')}
-                      </p>
+                      <p className="text-3xl font-bold text-green-600">R$ {formData.total.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
@@ -461,8 +288,9 @@ const NovoOrcamento = () => {
             </Card>
           </div>
         );
+      }
 
-      case 4:
+      case 4: {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -471,17 +299,17 @@ const NovoOrcamento = () => {
                 <Input
                   id="deadline"
                   value={formData.deadline}
-                  onChange={(e) => handleInputChange('deadline', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'deadline', payload: e.target.value })}
                   placeholder="Ex: 5 dias úteis"
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="payment">Forma de Pagamento</Label>
-                <Select onValueChange={(value) => handleInputChange('payment', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a forma de pagamento" />
-                  </SelectTrigger>
+                <Select
+                  value={formData.payment}
+                  onValueChange={(value) => dispatch({ type: 'UPDATE_FIELD', field: 'payment', payload: value })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione a forma de pagamento" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="vista">À vista</SelectItem>
                     <SelectItem value="50-50">50% entrada + 50% na conclusão</SelectItem>
@@ -493,24 +321,23 @@ const NovoOrcamento = () => {
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="warranty">Garantia</Label>
                 <Input
                   id="warranty"
                   value={formData.warranty}
-                  onChange={(e) => handleInputChange('warranty', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'warranty', payload: e.target.value })}
                   placeholder="Ex: 12 meses"
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="validity">Validade do Orçamento (dias)</Label>
-                <Select value={formData.validity} onValueChange={(value) => handleInputChange('validity', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select
+                  value={formData.validity}
+                  onValueChange={(value) => dispatch({ type: 'UPDATE_FIELD', field: 'validity', payload: value })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="15">15 dias</SelectItem>
                     <SelectItem value="30">30 dias</SelectItem>
@@ -520,22 +347,22 @@ const NovoOrcamento = () => {
                 </Select>
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="generalObservations">Observações Gerais</Label>
               <Textarea
                 id="generalObservations"
                 value={formData.generalObservations}
-                onChange={(e) => handleInputChange('generalObservations', e.target.value)}
+                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'generalObservations', payload: e.target.value })}
                 placeholder="Termos, condições e observações importantes..."
                 rows={4}
               />
             </div>
           </div>
         );
+      }
 
-      case 5:
-        { const budgetData: BudgetData = {
+      case 5: {
+        const budgetData: BudgetData = {
           id: Date.now(),
           clientName: formData.clientName,
           clientAddress: formData.clientAddress,
@@ -549,7 +376,6 @@ const NovoOrcamento = () => {
           terms: formData.payment,
           validity: `${formData.validity} dias`,
         };
-
         return (
           <div className="text-center">
             <Button onClick={() => setIsPreviewOpen(true)}>Visualizar Prévia</Button>
@@ -559,8 +385,9 @@ const NovoOrcamento = () => {
               onClose={() => setIsPreviewOpen(false)}
             />
           </div>
-        ); }
-
+        );
+      }
+      
       default:
         return null;
     }
@@ -568,7 +395,6 @@ const NovoOrcamento = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
           <Button 
@@ -586,10 +412,10 @@ const NovoOrcamento = () => {
         </div>
       </div>
 
-      {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
+          {/* ✅ CORREÇÃO 2: Substituímos 'steps' por 'STEPS' aqui */}
+          {STEPS.map((step, index) => (
             <div key={step.number} className="flex flex-col items-center">
               <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
                 currentStep >= step.number
@@ -607,7 +433,8 @@ const NovoOrcamento = () => {
               }`}>
                 {step.title}
               </span>
-              {index < steps.length - 1 && (
+              {/* ✅ CORREÇÃO 3: E aqui também */}
+              {index < STEPS.length - 1 && (
                 <div className={`hidden md:block w-20 h-0.5 absolute top-6 transform translate-x-12 ${
                   currentStep > step.number ? 'bg-blue-500' : 'bg-gray-300'
                 }`} />
@@ -617,12 +444,12 @@ const NovoOrcamento = () => {
         </div>
       </div>
 
-      {/* Step Content */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             {(() => {
-              const currentStepData = steps[currentStep - 1];
+              // ✅ CORREÇÃO 4: E finalmente aqui
+              const currentStepData = STEPS[currentStep - 1];
               const IconComponent = currentStepData?.icon;
               return (
                 <>
@@ -637,8 +464,7 @@ const NovoOrcamento = () => {
           {renderStepContent()}
         </CardContent>
       </Card>
-
-      {/* Navigation */}
+      
       <div className="flex justify-between mt-8">
         <Button
           variant="outline"
@@ -649,7 +475,6 @@ const NovoOrcamento = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Anterior
         </Button>
-
         {currentStep < 5 ? (
           <Button
             onClick={nextStep}

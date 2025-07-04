@@ -36,7 +36,7 @@ const App = () => (
           <Route path="/" element={<DashboardLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="orcamentos" element={<Orcamentos />} />
-            <Route path="orcamento/novo" element={<NovoOrcamento />} />
+            <Route path="orcamento/novo/:templateId?" element={<NovoOrcamento />} />
             <Route path="templates" element={<Templates />} />
             <Route path="perfil" element={<Perfil />} />
           </Route>
