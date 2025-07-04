@@ -2,10 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
   Eye, 
@@ -13,14 +9,10 @@ import {
   Copy, 
   Trash2,
   Download,
-  MessageSquare,
-  Search,
-  MoreHorizontal
+  MessageSquare
 } from 'lucide-react';
+import { PageHeader, MetricCard, DataTable, FilterBar } from '@/components';
 import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { FilterBar } from '@/components/layout/FilterBar';
-import { MetricCard } from '@/components/layout/MetricCard';
 
 const Orcamentos = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -51,6 +43,7 @@ const Orcamentos = () => {
       status: "Aprovado",
       profession: "Encanador"
     },
+    // ... outros orçamentos
   ];
 
   const getStatusColor = (status: string) => {
@@ -66,20 +59,16 @@ const Orcamentos = () => {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      status: '',
-      profession: ''
-    });
-    setSearchTerm('');
-  };
+  const filteredBudgets = budgets.filter(budget => {
+    const matchesSearch = budget.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         budget.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         budget.id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = !filters.status || budget.status === filters.status;
+    const matchesProfession = !filters.profession || budget.profession === filters.profession;
+    
+    return matchesSearch && matchesStatus && matchesProfession;
+  });
 
   const filterConfigs = [
     {
@@ -90,7 +79,8 @@ const Orcamentos = () => {
         { value: 'Pendente', label: 'Pendente' },
         { value: 'Aprovado', label: 'Aprovado' },
         { value: 'Rejeitado', label: 'Rejeitado' }
-      ]
+      ],
+      placeholder: 'Filtrar por status'
     },
     {
       key: 'profession',
@@ -100,7 +90,78 @@ const Orcamentos = () => {
         { value: 'Eletricista', label: 'Eletricista' },
         { value: 'Encanador', label: 'Encanador' },
         { value: 'Pintor', label: 'Pintor' }
-      ]
+      ],
+      placeholder: 'Filtrar por profissão'
+    }
+  ];
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ status: '', profession: '' });
+    setSearchTerm('');
+  };
+
+  const tableColumns = [
+    { key: 'id', label: '#ID', width: '100px' },
+    { key: 'client', label: 'Cliente' },
+    { key: 'phone', label: 'Telefone' },
+    { key: 'service', label: 'Serviço' },
+    { 
+      key: 'value', 
+      label: 'Valor',
+      render: (value: string) => (
+        <span className="font-semibold text-green-600">{value}</span>
+      )
+    },
+    { key: 'date', label: 'Data' },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (status: string) => (
+        <Badge className={getStatusColor(status)}>
+          {status}
+        </Badge>
+      )
+    }
+  ];
+
+  const quickActions = [
+    {
+      label: 'Visualizar',
+      icon: Eye,
+      onClick: (row: any) => console.log('View', row)
+    },
+    {
+      label: 'Download',
+      icon: Download,
+      onClick: (row: any) => console.log('Download', row)
+    },
+    {
+      label: 'WhatsApp',
+      icon: MessageSquare,
+      onClick: (row: any) => console.log('WhatsApp', row)
+    }
+  ];
+
+  const tableActions = [
+    {
+      label: 'Editar',
+      icon: Edit,
+      onClick: (row: any) => console.log('Edit', row)
+    },
+    {
+      label: 'Duplicar',
+      icon: Copy,
+      onClick: (row: any) => console.log('Copy', row)
+    },
+    {
+      label: 'Excluir',
+      icon: Trash2,
+      onClick: (row: any) => console.log('Delete', row),
+      variant: 'destructive' as const
     }
   ];
 
@@ -126,17 +187,6 @@ const Orcamentos = () => {
       iconColor: "bg-red-500"
     }
   ];
-
-  const filteredBudgets = budgets.filter(budget => {
-    const matchesSearch = budget.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         budget.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         budget.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = !filters.status || budget.status === filters.status;
-    const matchesProfession = !filters.profession || budget.profession === filters.profession;
-    
-    return matchesSearch && matchesStatus && matchesProfession;
-  });
 
   return (
     <div className="p-6 space-y-6">
@@ -180,87 +230,13 @@ const Orcamentos = () => {
         ))}
       </div>
 
-      {/* Budgets Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Orçamentos ({filteredBudgets.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">#ID</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Cliente</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Telefone</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Serviço</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Valor</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Data</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Status</th>
-                  <th className="text-left py-3 px-2 font-medium text-gray-600">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBudgets.map((budget) => (
-                  <tr key={budget.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-2 font-mono text-sm text-blue-600">{budget.id}</td>
-                    <td className="py-3 px-2 font-medium">{budget.client}</td>
-                    <td className="py-3 px-2 text-gray-600">{budget.phone}</td>
-                    <td className="py-3 px-2 text-gray-600">{budget.service}</td>
-                    <td className="py-3 px-2 font-semibold text-green-600">{budget.value}</td>
-                    <td className="py-3 px-2 text-gray-600">{budget.date}</td>
-                    <td className="py-3 px-2">
-                      <Badge className={getStatusColor(budget.status)}>
-                        {budget.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-2">
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MessageSquare className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Copy className="mr-2 h-4 w-4" />
-                              Duplicar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredBudgets.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Nenhum orçamento encontrado com os filtros aplicados.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <DataTable
+        title={`Orçamentos (${filteredBudgets.length})`}
+        data={filteredBudgets}
+        columns={tableColumns}
+        actions={[...quickActions, ...tableActions]}
+        emptyMessage="Nenhum orçamento encontrado com os filtros aplicados."
+      />
 
       {/* Modal de seleção de template */}
       <TemplateSelectionModal

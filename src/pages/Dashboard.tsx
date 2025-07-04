@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -155,11 +154,10 @@ const Dashboard = () => {
 
   return (
     <div className="p-6 space-y-8">
-      {/* Header */}
       <PageHeader
         title="Dashboard"
-        description="Bem-vindo de volta! Aqui está o resumo do seu negócio."
-        actionComponent={
+        subtitle="Bem-vindo de volta, Carlos! Aqui está o resumo do seu negócio."
+        actions={
           <Link to="/orcamento/novo">
             <Button className="bg-blue-500 hover:bg-blue-600">
               <FileText className="w-4 h-4 mr-2" />
