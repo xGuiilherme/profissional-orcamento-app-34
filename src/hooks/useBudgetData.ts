@@ -14,6 +14,7 @@ export interface BudgetData {
   clientEmail: string;
   terms: string;
   validity: string;
+  warranty: string;
 }
 
 export const budgetExamples = [
@@ -104,7 +105,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-1111",
         clientEmail: "joao.silva@email.com",
         terms: "50% antecipado, 50% na conclusão",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "12 meses para defeitos de instalação"
       },
       2: {
         id: 2,
@@ -126,7 +128,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-2222",
         clientEmail: "maria.santos@email.com",
         terms: "À vista com 10% desconto",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "6 meses para vazamentos e defeitos de fabricação"
       },
       3: {
         id: 3,
@@ -148,7 +151,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-3333",
         clientEmail: "pedro.costa@email.com",
         terms: "3x sem juros no cartão",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "12 meses para pintura e acabamento"
       },
       4: {
         id: 4,
@@ -170,7 +174,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-4444",
         clientEmail: "ana.oliveira@email.com",
         terms: "Entrada + 6x sem juros",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "12 meses para defeitos de fabricação"
       },
       5: {
         id: 5,
@@ -192,7 +197,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-5555",
         clientEmail: "carlos.lima@email.com",
         terms: "À vista ou 2x sem juros",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "12 meses para plantas e sistema de irrigação"
       },
       6: {
         id: 6,
@@ -214,7 +220,8 @@ export const useBudgetData = () => {
         clientPhone: "(11) 99999-7777",
         clientEmail: "roberto.alves@email.com",
         terms: "40% início, 60% conclusão",
-        validity: "30 dias"
+        validity: "30 dias",
+        warranty: "12 meses para estrutura e acabamento"
       }
     };
 

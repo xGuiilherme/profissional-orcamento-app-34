@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/hooks/useBudgetData';
 import Modal from './Modal';
+import { paymentTermsMap } from '@/constants/paymentTerms';
 
 interface PdfPreviewProps {
   budget: BudgetData;
@@ -123,9 +124,9 @@ const PdfPreview = ({ budget, isOpen, onClose }: PdfPreviewProps) => {
               <span className="text-3xl font-bold text-green-600">{budget.value}</span>
             </div>
             <div className="text-sm text-gray-600 text-left">
-              <p><strong>Condições de Pagamento:</strong> {budget.terms}</p>
+              <p><strong>Condições de Pagamento:</strong> {paymentTermsMap[budget.terms]}</p>
               <p><strong>Prazo de Execução:</strong> Conforme cronograma acordado</p>
-              <p><strong>Garantia:</strong> 6 meses para serviços executados</p>
+              <p><strong>Garantia:</strong> {budget.warranty?.trim() || <em>Sem garantia informada</em>} para serviços executados</p>
             </div>
           </div>
 
