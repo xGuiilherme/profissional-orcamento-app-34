@@ -1,5 +1,6 @@
 import { useState, useEffect, useReducer } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import InputMask from 'react-input-mask';
 
 // Lógica e Tipos do Formulário
 import { orcamentoFormReducer, initialState, type FormDataState } from '@/reducers/orcamentoFormReducer';
@@ -79,6 +80,7 @@ const NovoOrcamento = () => {
               <div className="space-y-2">
                 <Label htmlFor="clientName">Nome do Cliente *</Label>
                 <Input
+                  className={!formData.clientName.trim() ? 'border-red-500' : ''}
                   id="clientName"
                   value={formData.clientName}
                   onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientName', payload: e.target.value })}
@@ -88,13 +90,23 @@ const NovoOrcamento = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="clientPhone">Telefone/WhatsApp *</Label>
-                <Input
-                  id="clientPhone"
+                <InputMask
+                  mask="(99) 99999-9999"
                   value={formData.clientPhone}
-                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientPhone', payload: e.target.value })}
-                  placeholder="(11) 99999-9999"
-                  required
-                />
+                  onChange={(e) =>
+                    dispatch({ type: 'UPDATE_FIELD', field: 'clientPhone', payload: e.target.value })
+                  }
+                >
+                  {(inputProps: React.InputHTMLAttributes<HTMLInputElement>) => (
+                    <Input
+                      className={!formData.clientPhone.trim() ? 'border-red-500' : ''}
+                      id="clientPhone"
+                      {...inputProps}
+                      placeholder="(11) 99999-9999"
+                      required
+                    />
+                  )}
+                </InputMask>
               </div>
             </div>
             <div className="space-y-2">
@@ -110,6 +122,7 @@ const NovoOrcamento = () => {
             <div className="space-y-2">
               <Label htmlFor="clientAddress">Endereço Completo *</Label>
               <Textarea
+                className={!formData.clientAddress.trim() ? 'border-red-500' : ''}
                 id="clientAddress"
                 value={formData.clientAddress}
                 onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientAddress', payload: e.target.value })}
@@ -118,7 +131,7 @@ const NovoOrcamento = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="observations">Observações</Label>
+              <Label htmlFor="observations">Observações (opcional)</Label>
               <Textarea
                 id="observations"
                 value={formData.observations}
@@ -192,11 +205,13 @@ const NovoOrcamento = () => {
                   <CardContent className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                       <div className="md:col-span-2">
-                        <Label>Descrição</Label>
-                        <Input
+                        <Label>Descrição *</Label>
+                        <Input 
+                          className={!item.description.trim() ? 'border-red-500' : ''}
                           value={item.description}
                           onChange={(e) => dispatch({ type: 'UPDATE_ITEM', payload: { index, field: 'description', value: e.target.value }})}
                           placeholder="Descrição do item/serviço"
+                          required
                         />
                       </div>
                       <div>
@@ -295,8 +310,9 @@ const NovoOrcamento = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="deadline">Prazo de Execução</Label>
+                <Label htmlFor="deadline">Prazo de Execução *</Label>
                 <Input
+                  className={!formData.deadline.trim() ? 'border-red-500' : ''}
                   id="deadline"
                   value={formData.deadline}
                   onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'deadline', payload: e.target.value })}
@@ -304,7 +320,7 @@ const NovoOrcamento = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payment">Forma de Pagamento</Label>
+                <Label htmlFor="payment">Forma de Pagamento *</Label>
                 <Select
                   value={formData.payment}
                   onValueChange={(value) => dispatch({ type: 'UPDATE_FIELD', field: 'payment', payload: value })}
@@ -348,7 +364,7 @@ const NovoOrcamento = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="generalObservations">Observações Gerais</Label>
+              <Label htmlFor="generalObservations">Observações Gerais (opcional)</Label>
               <Textarea
                 id="generalObservations"
                 value={formData.generalObservations}
@@ -375,6 +391,7 @@ const NovoOrcamento = () => {
           value: `R$ ${formData.total.toFixed(2).replace('.', ',')}`,
           terms: formData.payment,
           validity: `${formData.validity} dias`,
+          warranty: formData.warranty,
         };
         return (
           <div className="text-center">
@@ -480,7 +497,9 @@ const NovoOrcamento = () => {
             onClick={nextStep}
             disabled={
               (currentStep === 1 && (!formData.clientName || !formData.clientPhone || !formData.clientAddress)) ||
-              (currentStep === 2 && !formData.profession)
+              (currentStep === 2 && !formData.profession) ||
+              (currentStep === 3 && formData.items.some(item => !item.description.trim())) ||
+              (currentStep === 4 && (!formData.deadline || !formData.payment))
             }
             className="min-w-32 bg-blue-500 hover:bg-blue-600"
           >
