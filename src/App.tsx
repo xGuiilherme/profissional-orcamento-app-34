@@ -7,6 +7,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
@@ -15,6 +16,7 @@ import Perfil from "./pages/Perfil";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import Exemplos from "./pages/Exemplos";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,11 +31,16 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          
+          <Route path="/auth/callback" element={<AuthCallback />} />
+
           <Route path="/exemplos" element={<Exemplos />} />
           
-          {/* Dashboard routes with layout */}
-          <Route path="/" element={<DashboardLayout />}>
+          {/* Dashboard routes with layout - Protected */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="orcamentos" element={<Orcamentos />} />
             <Route path="orcamento/novo/:templateId?" element={<NovoOrcamento />} />

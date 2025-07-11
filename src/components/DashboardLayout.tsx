@@ -1,24 +1,24 @@
 
 import { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calculator, 
-  BarChart3, 
-  FileText, 
-  Settings, 
-  User, 
-  CreditCard, 
+import {
+  Calculator,
+  BarChart3,
+  FileText,
+  Settings,
+  User,
+  CreditCard,
   Bell,
   Menu,
   X,
@@ -26,10 +26,29 @@ import {
   HelpCircle,
   Plus
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOutUser } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOutUser();
+      if (error) {
+        toast.error('Erro ao sair', { description: error.message });
+      } else {
+        toast.success('Logout realizado com sucesso!');
+        navigate('/login');
+      }
+    } catch (error) {
+      toast.error('Erro inesperado ao sair');
+      console.error('Logout error:', error);
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -184,11 +203,9 @@ const DashboardLayout = () => {
                     Ajuda
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/login">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </Link>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

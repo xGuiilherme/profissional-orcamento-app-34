@@ -1,23 +1,59 @@
 
-import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle } from 'lucide-react';
+import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/hooks/useBudgetData';
+import { useBudgetOperations } from '@/hooks/useBudgetOperations';
+import { FormDataState } from '@/reducers/orcamentoFormReducer';
+import { useToast } from '@/hooks/use-toast';
 import Modal from './Modal';
-import { paymentTermsMap } from '@/constants/paymentTerms';
+import BudgetItemsPreview from './BudgetItemsPreview';
 
 interface PdfPreviewProps {
   budget: BudgetData;
+  formData?: FormDataState;
   isOpen: boolean;
   onClose: () => void;
+  onSave?: () => void;
 }
 
-const PdfPreview = ({ budget, isOpen, onClose }: PdfPreviewProps) => {
+const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewProps) => {
+  const { saveBudget } = useBudgetOperations();
+  const { toast } = useToast();
+
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
+
+  const handleSaveBudget = async () => {
+    if (!formData) {
+      toast({
+        title: "Erro",
+        description: "Dados do formulário não encontrados",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await saveBudget(formData);
+
+    if (result.success) {
+      toast({
+        title: "Sucesso!",
+        description: "Orçamento salvo com sucesso",
+      });
+      if (onSave) onSave();
+      onClose();
+    } else {
+      toast({
+        title: "Erro",
+        description: result.error || "Erro ao salvar orçamento",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -93,42 +129,17 @@ const PdfPreview = ({ budget, isOpen, onClose }: PdfPreviewProps) => {
           </div>
 
           {/* Items Included */}
-          <div className="mb-8">
-            <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">ITENS INCLUSOS NO ORÇAMENTO</h3>
-            <div className="bg-white border border-gray-200 rounded-lg">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Item</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-900 w-16">Incluído</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {budget.items.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="flex items-center py-3 px-4 text-gray-700">{item}</td>
-                      <td className="py-3 px-4 text-center">
-                        <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Financial Information */}
-          <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">VALOR TOTAL</h3>
-              <span className="text-3xl font-bold text-green-600">{budget.value}</span>
-            </div>
-            <div className="text-sm text-gray-600 text-left">
-              <p><strong>Condições de Pagamento:</strong> {paymentTermsMap[budget.terms]}</p>
-              <p><strong>Prazo de Execução:</strong> Conforme cronograma acordado</p>
-              <p><strong>Garantia:</strong> {budget.warranty?.trim() || <em>Sem garantia informada</em>} para serviços executados</p>
-            </div>
-          </div>
+          <BudgetItemsPreview
+            items={budget.items}
+            className="mb-8"
+            showTotals={true}
+            subtotalMaterials={budget.subtotalMaterials}
+            subtotalLabor={budget.subtotalLabor}
+            discount={budget.discount}
+            total={budget.total}
+            paymentTerms={budget.terms}
+            warranty={budget.warranty}
+          />
 
           {/* Terms and Conditions */}
           <div className="border-t pt-6">
@@ -148,6 +159,19 @@ const PdfPreview = ({ budget, isOpen, onClose }: PdfPreviewProps) => {
             </p>
           </div>
         </div>
+
+        {/* Action Buttons */}
+        {formData && (
+          <div className="flex justify-end space-x-3 p-6 bg-gray-50 border-t">
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
+            <Button onClick={handleSaveBudget} className="bg-green-600 hover:bg-green-700">
+              <Save className="w-4 h-4 mr-2" />
+              Salvar Orçamento
+            </Button>
+          </div>
+        )}
       </div>
     </Modal>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,26 @@ const Login = () => {
     rememberMe: false
   });
   const navigate = useNavigate();
-  const { signInUser, signInWithGoogle } = useAuth();
+  const { user, loading, signInUser, signInWithGoogle } = useAuth();
+
+  // Redirecionar se já estiver autenticado (apenas após o loading terminar)
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
+
+  // Mostrar loading enquanto verifica autenticação inicial
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -31,10 +50,13 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     const { error } = await signInWithGoogle();
-    if (error) { toast.error("Erro no login com Google", { description: error.message }); }
-    setIsLoading(false);
+    if (error) {
+      toast.error("Erro no login com Google", { description: error.message });
+      setIsGoogleLoading(false);
+    }
+    // Não definir loading como false aqui, pois o useEffect vai redirecionar
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

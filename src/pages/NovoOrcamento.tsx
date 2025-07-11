@@ -11,7 +11,7 @@ import { STEPS, PROFESSIONS, UNITS } from '../constants/orcamentoConst';
 // Hooks
 import { useTemplateData } from '@/hooks/useTemplateData';
 import { useToast } from '@/hooks/use-toast';
-import { type BudgetData } from '@/hooks/useBudgetData';
+import { useBudgetOperations } from '@/hooks/useBudgetOperations';
 
 // Componentes de UI
 import PdfPreview from '@/components/PdfPreview';
@@ -31,6 +31,7 @@ const NovoOrcamento = () => {
   const { templateId } = useParams<{ templateId: string }>();
 
   const { getTemplateById, getTemplatesByProfession } = useTemplateData();
+  const { convertFormDataToBudgetData } = useBudgetOperations();
   const [formData, dispatch] = useReducer(orcamentoFormReducer, initialState);
 
   useEffect(() => {
@@ -378,28 +379,23 @@ const NovoOrcamento = () => {
       }
 
       case 5: {
-        const budgetData: BudgetData = {
-          id: Date.now(),
-          clientName: formData.clientName,
-          clientAddress: formData.clientAddress,
-          clientPhone: formData.clientPhone,
-          clientEmail: formData.clientEmail,
-          title: formData.template || 'Serviço Personalizado',
-          category: formData.profession,
-          description: formData.generalObservations || 'Serviços e materiais conforme listado abaixo.',
-          items: formData.items.map(i => i.description),
-          value: `R$ ${formData.total.toFixed(2).replace('.', ',')}`,
-          terms: formData.payment,
-          validity: `${formData.validity} dias`,
-          warranty: formData.warranty,
-        };
+        const budgetData = convertFormDataToBudgetData(formData);
+
         return (
           <div className="text-center">
             <Button onClick={() => setIsPreviewOpen(true)}>Visualizar Prévia</Button>
             <PdfPreview
               budget={budgetData}
+              formData={formData}
               isOpen={isPreviewOpen}
               onClose={() => setIsPreviewOpen(false)}
+              onSave={() => {
+                toast({
+                  title: "Sucesso!",
+                  description: "Orçamento salvo com sucesso! Redirecionando...",
+                });
+                setTimeout(() => navigate('/orcamentos'), 2000);
+              }}
             />
           </div>
         );
