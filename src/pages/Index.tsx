@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield, X, Eye } from 'lucide-react';
+import { Check, Calculator, FileText, MessageSquare, Star, Users, Zap, Shield, X, Eye, Crown } from 'lucide-react';
 
 
 const Index = () => {
@@ -108,42 +108,67 @@ const Index = () => {
 
   const plans = [
     {
-      name: "Básico",
-      price: 19,
-      description: "Para freelancers iniciantes",
+      id: 'gratuito',
+      name: 'Gratuito',
+      price: 0,
+      period: 'para sempre',
+      description: 'Ideal para testar a plataforma',
+      icon: <Star className="w-6 h-6" />,
+      buttonText: 'Começar Grátis',
+      buttonVariant: 'outline',
+      recommended: false,
       features: [
-        "Até 50 orçamentos/mês",
-        "3 templates básicos",
-        "Geração de PDF",
-        "Suporte por email"
-      ],
-      recommended: false
+        { text: 'Até 10 orçamentos por mês', included: true },
+        { text: 'Templates básicos', included: true },
+        { text: 'Exportação em PDF', included: true },
+        { text: 'Suporte por email', included: true },
+        { text: 'Orçamentos ilimitados', included: false },
+        { text: 'Templates premium', included: false },
+        { text: 'Marca personalizada', included: false },
+        { text: 'Suporte prioritário', included: false },
+      ]
     },
     {
-      name: "Pro",
-      price: 29,
-      description: "Para profissionais estabelecidos",
+      id: 'profissional',
+      name: 'Profissional',
+      price: 29.90,
+      period: 'por mês',
+      description: 'Para profissionais que querem crescer',
+      icon: <Zap className="w-6 h-6" />,
+      buttonText: 'Teste 7 dias grátis',
+      buttonVariant: 'default',
+      recommended: true,
       features: [
-        "Orçamentos ilimitados",
-        "Templates personalizáveis",
-        "Integração WhatsApp",
-        "Relatórios avançados",
-        "Suporte prioritário"
-      ],
-      recommended: true
+        { text: 'Orçamentos ilimitados', included: true },
+        { text: 'Todos os templates', included: true },
+        { text: 'Exportação em PDF', included: true },
+        { text: 'Marca personalizada', included: true },
+        { text: 'Relatórios avançados', included: true },
+        { text: 'Suporte prioritário', included: true },
+        { text: 'Backup automático', included: true },
+        { text: 'Integração com WhatsApp', included: true },
+      ]
     },
     {
-      name: "Premium",
-      price: 39,
-      description: "Para empresas e equipes",
+      id: 'empresarial',
+      name: 'Empresarial',
+      price: 79.90,
+      period: 'por mês',
+      description: 'Para empresas e equipes',
+      icon: <Crown className="w-6 h-6" />,
+      buttonText: 'Teste 7 dias grátis',
+      buttonVariant: 'secondary',
+      recommended: false,
       features: [
-        "Tudo do Pro +",
-        "Multi-usuários",
-        "API personalizada",
-        "Marca branca",
-        "Suporte telefônico"
-      ],
-      recommended: false
+        { text: 'Tudo do plano Profissional', included: true },
+        { text: 'Até 5 usuários', included: true },
+        { text: 'Gestão de equipe', included: true },
+        { text: 'API personalizada', included: true },
+        { text: 'Treinamento dedicado', included: true },
+        { text: 'Suporte 24/7', included: true },
+        { text: 'Relatórios personalizados', included: true },
+        { text: 'Integração com CRM', included: true },
+      ]
     }
   ];
 
@@ -319,45 +344,67 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Escolha o plano ideal para você
+              Escolha o Plano Ideal
             </h2>
             <p className="text-xl text-gray-600">
-              Todos os planos incluem 7 dias de teste grátis
+              Potencialize seu negócio com orçamentos profissionais
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
-              <Card key={index} className={`relative hover:shadow-lg transition-shadow ${plan.recommended ? 'ring-2 ring-blue-500' : ''}`}>
+              <Card
+                key={plan.id}
+                className={`relative transition-all duration-300 hover:shadow-xl ${
+                  plan.recommended ? 'ring-2 ring-blue-500 scale-105' : ''
+                }`}
+              >
                 {plan.recommended && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-blue-500 text-white">Mais Popular</Badge>
-                  </div>
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white">
+                    Mais Popular
+                  </Badge>
                 )}
+
                 <CardContent className="p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
-                      R$ {plan.price}
-                      <span className="text-sm font-normal text-gray-500">/mês</span>
+                  <div className="text-center mb-6">
+                    <div className={`w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                      plan.recommended ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {plan.icon}
                     </div>
-                    <p className="text-gray-600">{plan.description}</p>
+
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+
+                    <div className="mb-6">
+                      <span className="text-4xl font-bold text-gray-900">
+                        R$ {plan.price.toFixed(2).replace('.', ',')}
+                      </span>
+                      <span className="text-gray-600 ml-2">{plan.period}</span>
+                    </div>
                   </div>
 
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center">
-                        <Check className="w-5 h-5 text-green-500 mr-3" />
-                        <span className="text-gray-600">{feature}</span>
+                        <Check
+                          className={`w-4 h-4 mr-3 ${
+                            feature.included ? 'text-green-500' : 'text-gray-300'
+                          }`}
+                        />
+                        <span className={feature.included ? 'text-gray-700' : 'text-gray-400'}>
+                          {feature.text}
+                        </span>
                       </li>
                     ))}
                   </ul>
 
                   <Link to="/signup">
-                    <Button 
-                      className={`w-full ${plan.recommended ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
+                    <Button
+                      variant={plan.buttonVariant}
+                      className="w-full"
                     >
-                      Teste 7 dias grátis
+                      {plan.buttonText}
                     </Button>
                   </Link>
                 </CardContent>

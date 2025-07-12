@@ -13,6 +13,7 @@ import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
 import Templates from "./pages/Templates";
 import Perfil from "./pages/Perfil";
+import Assinatura from "./pages/Assinatura";
 import DashboardLayout from "./components/DashboardLayout";
 import NotFound from "./pages/NotFound";
 import Exemplos from "./pages/Exemplos";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="orcamento/novo/:templateId?" element={<NovoOrcamento />} />
             <Route path="templates" element={<Templates />} />
             <Route path="perfil" element={<Perfil />} />
+            <Route path="assinatura" element={<Assinatura />} />
           </Route>
           
           {/* Catch-all route for 404 */}

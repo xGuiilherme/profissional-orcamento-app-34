@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from 'react';
 import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,14 +22,105 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
   const { saveBudget } = useBudgetOperations();
   const { toast } = useToast();
 
+  // Estado local para gerenciar os itens editáveis
+  const [localFormData, setLocalFormData] = useState(formData);
+
+  useEffect(() => {
+    setLocalFormData(formData);
+  }, [formData]);
+
   const currentDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
   });
 
+  // Funções para edição de itens
+  const handleItemUpdate = (index: number, field: keyof any, value: string | number) => {
+    if (!localFormData) return;
+
+    const newItems = [...localFormData.items];
+    const updatedItem = { ...newItems[index], [field]: value };
+
+    // Recalcular total quando quantidade ou preço unitário mudar
+    if (field === 'quantity' || field === 'unitPrice') {
+      updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+    }
+
+    newItems[index] = updatedItem;
+
+    // Recalcular totais
+    const subtotalMaterials = newItems
+      .filter(item => item.type === 'material')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const subtotalLabor = newItems
+      .filter(item => item.type === 'labor')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const total = subtotalMaterials + subtotalLabor - (localFormData.discount || 0);
+
+    setLocalFormData({
+      ...localFormData,
+      items: newItems,
+      subtotalMaterials,
+      subtotalLabor,
+      total
+    });
+  };
+
+  const handleItemRemove = (index: number) => {
+    if (!localFormData || localFormData.items.length <= 1) return;
+
+    const newItems = localFormData.items.filter((_, i) => i !== index);
+
+    // Recalcular totais
+    const subtotalMaterials = newItems
+      .filter(item => item.type === 'material')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const subtotalLabor = newItems
+      .filter(item => item.type === 'labor')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const total = subtotalMaterials + subtotalLabor - (localFormData.discount || 0);
+
+    setLocalFormData({
+      ...localFormData,
+      items: newItems,
+      subtotalMaterials,
+      subtotalLabor,
+      total
+    });
+  };
+
+  const handleItemAdd = (newItem: any) => {
+    if (!localFormData) return;
+
+    const newItems = [...localFormData.items, newItem];
+
+    // Recalcular totais
+    const subtotalMaterials = newItems
+      .filter(item => item.type === 'material')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const subtotalLabor = newItems
+      .filter(item => item.type === 'labor')
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const total = subtotalMaterials + subtotalLabor - (localFormData.discount || 0);
+
+    setLocalFormData({
+      ...localFormData,
+      items: newItems,
+      subtotalMaterials,
+      subtotalLabor,
+      total
+    });
+  };
+
   const handleSaveBudget = async () => {
-    if (!formData) {
+    if (!localFormData) {
       toast({
         title: "Erro",
         description: "Dados do formulário não encontrados",
@@ -37,7 +129,7 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
       return;
     }
 
-    const result = await saveBudget(formData);
+    const result = await saveBudget(localFormData);
 
     if (result.success) {
       toast({
@@ -130,15 +222,19 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
 
           {/* Items Included */}
           <BudgetItemsPreview
-            items={budget.items}
+            items={localFormData?.items || budget.items}
             className="mb-8"
             showTotals={true}
-            subtotalMaterials={budget.subtotalMaterials}
-            subtotalLabor={budget.subtotalLabor}
-            discount={budget.discount}
-            total={budget.total}
+            subtotalMaterials={localFormData?.subtotalMaterials || budget.subtotalMaterials}
+            subtotalLabor={localFormData?.subtotalLabor || budget.subtotalLabor}
+            discount={localFormData?.discount || budget.discount}
+            total={localFormData?.total || budget.total}
             paymentTerms={budget.terms}
             warranty={budget.warranty}
+            editable={!!formData}
+            onItemUpdate={handleItemUpdate}
+            onItemRemove={handleItemRemove}
+            onItemAdd={handleItemAdd}
           />
 
           {/* Terms and Conditions */}

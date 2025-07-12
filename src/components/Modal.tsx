@@ -76,8 +76,7 @@ const Modal = ({ isOpen, onClose, title, children, className = '' }: ModalProps)
         </div>
         <div
           ref={contentRef}
-          tabIndex={0}
-          className="flex-1 overflow-y-auto p-6"
+          className="flex-1 overflow-y-auto p-4 sm:p-6"
           style={{ maxHeight: 'calc(90vh - 80px)' }}
         >
           {children}

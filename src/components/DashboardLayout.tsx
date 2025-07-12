@@ -193,6 +193,12 @@ const DashboardLayout = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link to="/assinatura">
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Assinatura
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/configuracoes">
                       <Settings className="mr-2 h-4 w-4" />
                       Configurações
