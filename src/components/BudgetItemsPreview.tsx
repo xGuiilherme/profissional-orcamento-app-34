@@ -348,7 +348,7 @@ const BudgetItemsPreview = ({
           {/* Informações adicionais */}
           {(paymentTerms || warranty) && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <h5 className="text-sm font-semibold text-gray-900 mb-3">CONDIÇÕES COMERCIAIS</h5>
+              <h5 className="text-sm font-semibold text-gray-900 mb-3 text-left">CONDIÇÕES COMERCIAIS</h5>
               <div className="text-sm text-gray-600 space-y-1 text-left">
                 {paymentTerms && (
                   <div className="text-left">

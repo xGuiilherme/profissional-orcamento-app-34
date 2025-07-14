@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Eye, 
-  Edit, 
-  Copy, 
+import {
+  Plus,
+  Eye,
+  Edit,
+  Copy,
   Trash2,
   Download,
   MessageSquare
 } from 'lucide-react';
 import { PageHeader, MetricCard, DataTable, FilterBar } from '@/components';
 import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
+import { useBudgetOperations } from '@/hooks/useBudgetOperations';
+import { useToast } from '@/hooks/use-toast';
 
 const Orcamentos = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -21,39 +23,85 @@ const Orcamentos = () => {
     status: '',
     profession: ''
   });
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const budgets = [
-    {
-      id: "ORC001",
-      client: "João Silva",
-      phone: "(11) 99999-1111",
-      service: "Instalação Elétrica",
-      value: "R$ 1.200,00",
-      date: "15/12/2024",
-      status: "Pendente",
-      profession: "Eletricista"
-    },
-    {
-      id: "ORC002",
-      client: "Maria Santos",
-      phone: "(11) 99999-2222",
-      service: "Reparo Hidráulico",
-      value: "R$ 450,00",
-      date: "14/12/2024",
-      status: "Aprovado",
-      profession: "Encanador"
-    },
-    // ... outros orçamentos
-  ];
+  const { getBudgets, deleteBudget, updateBudgetStatus } = useBudgetOperations();
+  const { toast } = useToast();
+
+  // Carregar orçamentos do Supabase
+  const loadBudgets = async () => {
+    setLoading(true);
+    try {
+      const result = await getBudgets();
+      if (result.success && result.data) {
+        // Transformar dados do Supabase para o formato esperado pela tabela
+        const transformedBudgets = result.data.map((budget: any, index: number) => {
+          // Gerar ID sequencial no formato ORC001
+          const sequentialId = (index + 1).toString().padStart(3, '0');
+
+          return {
+            id: `ORC${sequentialId}`,
+            originalId: budget.id,
+            client: budget.client_name,
+            phone: budget.client_phone || 'Não informado',
+            service: budget.profession || 'Serviço Personalizado',
+            value: `R$ ${(budget.total || 0).toFixed(2).replace('.', ',')}`,
+            date: new Date(budget.created_at).toLocaleDateString('pt-BR'),
+            status: getStatusLabel(budget.status),
+            profession: budget.profession || 'Não informado',
+            rawData: budget // Manter dados originais para operações
+          };
+        });
+        setBudgets(transformedBudgets);
+      } else {
+        toast({
+          title: "Erro",
+          description: result.error || "Erro ao carregar orçamentos",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar orçamentos:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar orçamentos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Carregar orçamentos ao montar o componente
+  useEffect(() => {
+    loadBudgets();
+  }, []);
+
+  // Função para mapear status do banco para labels
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'draft': 'Rascunho',
+      'pending': 'Pendente',
+      'approved': 'Aprovado',
+      'rejected': 'Rejeitado',
+      'completed': 'Concluído'
+    };
+    return statusMap[status] || 'Rascunho';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Rascunho':
+        return 'bg-gray-100 text-gray-800';
       case 'Aprovado':
         return 'bg-green-100 text-green-800';
       case 'Pendente':
         return 'bg-yellow-100 text-yellow-800';
       case 'Rejeitado':
         return 'bg-red-100 text-red-800';
+      case 'Concluído':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -70,28 +118,48 @@ const Orcamentos = () => {
     return matchesSearch && matchesStatus && matchesProfession;
   });
 
+  // Gerar opções de filtro dinamicamente
+  const uniqueStatuses = [...new Set(budgets.map(b => b.status))];
+  const uniqueProfessions = [...new Set(budgets.map(b => b.profession).filter(p => p !== 'Não informado'))];
+
   const filterConfigs = [
     {
       key: 'status',
       label: 'Status',
       type: 'select' as const,
-      options: [
-        { value: 'Pendente', label: 'Pendente' },
-        { value: 'Aprovado', label: 'Aprovado' },
-        { value: 'Rejeitado', label: 'Rejeitado' }
-      ],
+      options: uniqueStatuses.map(status => ({ value: status, label: status })),
       placeholder: 'Filtrar por status'
     },
     {
       key: 'profession',
       label: 'Profissão',
       type: 'select' as const,
-      options: [
-        { value: 'Eletricista', label: 'Eletricista' },
-        { value: 'Encanador', label: 'Encanador' },
-        { value: 'Pintor', label: 'Pintor' }
-      ],
+      options: uniqueProfessions.map(profession => ({ value: profession, label: profession })),
       placeholder: 'Filtrar por profissão'
+    }
+  ];
+
+  // Calcular métricas dinamicamente
+  const summaryMetrics = [
+    {
+      title: 'Total de Orçamentos',
+      value: budgets.length.toString(),
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Pendentes',
+      value: budgets.filter(b => b.status === 'Pendente').length.toString(),
+      iconColor: 'text-yellow-600'
+    },
+    {
+      title: 'Aprovados',
+      value: budgets.filter(b => b.status === 'Aprovado').length.toString(),
+      iconColor: 'text-green-600'
+    },
+    {
+      title: 'Rejeitados',
+      value: budgets.filter(b => b.status === 'Rejeitado').length.toString(),
+      iconColor: 'text-red-600'
     }
   ];
 
@@ -128,21 +196,83 @@ const Orcamentos = () => {
     }
   ];
 
+  // Ações de CRUD
+  const handleDeleteBudget = async (row: any) => {
+    if (window.confirm('Tem certeza que deseja excluir este orçamento?')) {
+      try {
+        const result = await deleteBudget(row.originalId);
+        if (result.success) {
+          toast({
+            title: "Sucesso",
+            description: "Orçamento excluído com sucesso",
+          });
+          loadBudgets(); // Recarregar lista
+        } else {
+          toast({
+            title: "Erro",
+            description: result.error || "Erro ao excluir orçamento",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro inesperado ao excluir orçamento",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleStatusChange = async (row: any, newStatus: string) => {
+    try {
+      const result = await updateBudgetStatus(row.originalId, newStatus);
+      if (result.success) {
+        toast({
+          title: "Sucesso",
+          description: "Status atualizado com sucesso",
+        });
+        loadBudgets(); // Recarregar lista
+      } else {
+        toast({
+          title: "Erro",
+          description: result.error || "Erro ao atualizar status",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const quickActions = [
     {
       label: 'Visualizar',
       icon: Eye,
-      onClick: (row: any) => console.log('View', row)
+      onClick: (row: any) => {
+        // TODO: Implementar visualização do orçamento
+        console.log('View', row);
+      }
     },
     {
-      label: 'Download',
+      label: 'Download PDF',
       icon: Download,
-      onClick: (row: any) => console.log('Download', row)
+      onClick: (row: any) => {
+        // TODO: Implementar download do PDF
+        console.log('Download', row);
+      }
     },
     {
       label: 'WhatsApp',
       icon: MessageSquare,
-      onClick: (row: any) => console.log('WhatsApp', row)
+      onClick: (row: any) => {
+        // TODO: Implementar envio via WhatsApp
+        console.log('WhatsApp', row);
+      }
     }
   ];
 
@@ -150,43 +280,43 @@ const Orcamentos = () => {
     {
       label: 'Editar',
       icon: Edit,
-      onClick: (row: any) => console.log('Edit', row)
+      onClick: (row: any) => {
+        // TODO: Implementar edição do orçamento
+        console.log('Edit', row);
+      }
     },
     {
       label: 'Duplicar',
       icon: Copy,
-      onClick: (row: any) => console.log('Copy', row)
+      onClick: (row: any) => {
+        // TODO: Implementar duplicação do orçamento
+        console.log('Copy', row);
+      }
+    },
+    {
+      label: 'Marcar como Pendente',
+      icon: Eye,
+      onClick: (row: any) => handleStatusChange(row, 'pending')
+    },
+    {
+      label: 'Marcar como Aprovado',
+      icon: Eye,
+      onClick: (row: any) => handleStatusChange(row, 'approved')
+    },
+    {
+      label: 'Marcar como Rejeitado',
+      icon: Eye,
+      onClick: (row: any) => handleStatusChange(row, 'rejected')
     },
     {
       label: 'Excluir',
       icon: Trash2,
-      onClick: (row: any) => console.log('Delete', row),
+      onClick: handleDeleteBudget,
       variant: 'destructive' as const
     }
   ];
 
-  const summaryMetrics = [
-    {
-      title: "Total de Orçamentos",
-      value: budgets.length.toString(),
-      iconColor: "bg-blue-500"
-    },
-    {
-      title: "Pendentes",
-      value: budgets.filter(b => b.status === 'Pendente').length.toString(),
-      iconColor: "bg-yellow-500"
-    },
-    {
-      title: "Aprovados",
-      value: budgets.filter(b => b.status === 'Aprovado').length.toString(),
-      iconColor: "bg-green-500"
-    },
-    {
-      title: "Rejeitados",
-      value: budgets.filter(b => b.status === 'Rejeitado').length.toString(),
-      iconColor: "bg-red-500"
-    }
-  ];
+
 
   return (
     <div className="p-6 space-y-6">
@@ -230,13 +360,22 @@ const Orcamentos = () => {
         ))}
       </div>
 
-      <DataTable
-        title={`Orçamentos (${filteredBudgets.length})`}
-        data={filteredBudgets}
-        columns={tableColumns}
-        actions={[...quickActions, ...tableActions]}
-        emptyMessage="Nenhum orçamento encontrado com os filtros aplicados."
-      />
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando orçamentos...</p>
+          </div>
+        </div>
+      ) : (
+        <DataTable
+          title={`Orçamentos (${filteredBudgets.length})`}
+          data={filteredBudgets}
+          columns={tableColumns}
+          actions={[...quickActions, ...tableActions]}
+          emptyMessage="Nenhum orçamento encontrado. Crie seu primeiro orçamento!"
+        />
+      )}
 
       {/* Modal de seleção de template */}
       <TemplateSelectionModal
