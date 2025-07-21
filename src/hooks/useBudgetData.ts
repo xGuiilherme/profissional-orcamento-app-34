@@ -14,6 +14,7 @@ export interface BudgetData {
   id: number | string;
   category: string;
   title: string;
+  serviceDescription?: string;
   description: string;
   value: string;
   items: BudgetItem[];
@@ -162,7 +163,7 @@ export const useBudgetData = () => {
         clientAddress: "Av. Paulista, 456 - Bela Vista - São Paulo/SP - CEP: 01310-100",
         clientPhone: "(11) 98888-5678",
         clientEmail: "maria.santos@email.com",
-        terms: "parcelado_2x",
+        terms: "parcelado 2x",
         validity: "15 dias",
         warranty: "24 meses",
         items: [
@@ -370,7 +371,7 @@ export const useBudgetData = () => {
         clientAddress: "Rua dos Operários, 987 - Ipiranga - São Paulo/SP - CEP: 04261-000",
         clientPhone: "(11) 94444-2468",
         clientEmail: "roberto.lima@email.com",
-        terms: "parcelado_2x",
+        terms: "parcelado 2x",
         validity: "30 dias",
         warranty: "12 meses",
         items: [

@@ -58,9 +58,11 @@ export const DataTable: React.FC<DataTableProps> = ({
   return (
     <Card className={className}>
       {(title || headerActions) && (
-        <CardHeader className="flex flex-row items-center justify-between">
-          {title && <CardTitle>{title}</CardTitle>}
-          {headerActions}
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          {title && <CardTitle className="text-lg font-semibold">{title}</CardTitle>}
+          <div className="flex-shrink-0">
+            {headerActions}
+          </div>
         </CardHeader>
       )}
       <CardContent>

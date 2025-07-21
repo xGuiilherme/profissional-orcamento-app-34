@@ -27,13 +27,50 @@ import {
   Plus
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOutUser } = useAuth();
+  const { user, signOutUser } = useAuth();
+  const { profile } = useProfile();
+
+  // Função para obter o nome do usuário
+  const getUserName = () => {
+    if (profile?.full_name) {
+      return profile.full_name;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'Usuário';
+  };
+
+  // Função para obter o email do usuário
+  const getUserEmail = () => {
+    if (profile?.email) {
+      return profile.email;
+    }
+    if (user?.email) {
+      return user.email;
+    }
+    return '';
+  };
+
+  // Função para obter as iniciais do usuário
+  const getUserInitials = () => {
+    const name = getUserName();
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   const handleLogout = async () => {
     try {
@@ -171,17 +208,19 @@ const DashboardLayout = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" />
-                      <AvatarFallback>CS</AvatarFallback>
+                      <AvatarImage src="" />
+                      <AvatarFallback className="bg-blue-500 text-white text-sm font-medium">
+                        {getUserInitials()}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Carlos Silva</p>
+                      <p className="text-sm font-medium leading-none">{getUserName()}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        carlos@email.com
+                        {getUserEmail()}
                       </p>
                     </div>
                   </DropdownMenuLabel>

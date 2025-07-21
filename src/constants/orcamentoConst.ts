@@ -17,3 +17,9 @@ export const PROFESSIONS = [
 ];
 
 export const UNITS = ['un', 'm²', 'm', 'kg', 'l', 'pç', 'h'];
+
+export const TIME_UNITS = [
+  { value: 'dias', label: 'Dias' },
+  { value: 'meses', label: 'Meses' },
+  { value: 'anos', label: 'Anos' }
+];

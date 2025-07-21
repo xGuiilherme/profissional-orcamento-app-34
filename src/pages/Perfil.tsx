@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,38 +13,67 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { 
-  User, 
-  Building, 
-  Settings, 
+import {
+  User,
+  Building,
+  Settings,
   MessageSquare,
   Upload,
   Save,
   CheckCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 
 const Perfil = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { profile, loading, updateProfile } = useProfile();
   const [activeTab, setActiveTab] = useState('personal');
-  
+  const [saving, setSaving] = useState(false);
+
+  // Estados locais para edição
   const [personalData, setPersonalData] = useState({
-    name: 'Carlos Silva',
-    email: 'carlos@email.com',
-    phone: '(11) 99999-1111',
-    profession: 'Eletricista',
-    specialties: 'Instalações residenciais, Manutenção preventiva'
+    name: '',
+    email: '',
+    phone: '',
+    profession: '',
+    specialties: ''
   });
 
   const [companyData, setCompanyData] = useState({
-    companyName: 'Silva Elétrica',
-    cnpj: '12.345.678/0001-90',
-    address: 'Rua das Flores, 123 - São Paulo, SP',
-    cep: '01234-567',
-    city: 'São Paulo',
-    state: 'SP'
+    companyName: '',
+    cnpj: '',
+    address: '',
+    cep: '',
+    city: '',
+    state: ''
   });
+
+  // Sincronizar dados do perfil com os estados locais
+  useEffect(() => {
+    if (profile) {
+      setPersonalData({
+        name: profile.full_name || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        profession: profile.profession || '',
+        specialties: profile.specialties || ''
+      });
+
+      setCompanyData({
+        companyName: profile.company_name || '',
+        cnpj: profile.cnpj || '',
+        address: profile.address || '',
+        cep: profile.cep || '',
+        city: profile.city || '',
+        state: profile.state || ''
+      });
+    }
+  }, [profile, user]);
 
   const [budgetSettings, setBudgetSettings] = useState({
     defaultSignature: 'Atenciosamente,\nCarlos Silva\nEletricista Certificado\n(11) 99999-1111',
@@ -69,11 +98,70 @@ const Perfil = () => {
     { id: 'whatsapp', title: 'Integração WhatsApp', icon: MessageSquare }
   ];
 
-  const handleSave = (section: string) => {
-    toast({
-      title: "Dados salvos com sucesso!",
-      description: `As informações de ${section} foram atualizadas.`,
-    });
+  // Carregar dados do perfil quando disponível
+  useEffect(() => {
+    if (profile) {
+      setPersonalData({
+        name: profile.full_name || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        profession: profile.profession || '',
+        specialties: profile.specialties || ''
+      });
+
+      setCompanyData({
+        companyName: profile.company_name || '',
+        cnpj: profile.cnpj || '',
+        address: profile.address || '',
+        cep: profile.cep || '',
+        city: profile.city || '',
+        state: profile.state || ''
+      });
+    }
+  }, [profile, user]);
+
+  const handleSave = async (section: string) => {
+    if (!profile) return;
+
+    setSaving(true);
+    try {
+      let updateData = {};
+
+      if (section === 'dados pessoais') {
+        updateData = {
+          full_name: personalData.name,
+          email: personalData.email,
+          phone: personalData.phone,
+          profession: personalData.profession,
+          specialties: personalData.specialties
+        };
+      } else if (section === 'dados da empresa') {
+        updateData = {
+          company_name: companyData.companyName,
+          cnpj: companyData.cnpj,
+          address: companyData.address,
+          cep: companyData.cep,
+          city: companyData.city,
+          state: companyData.state
+        };
+      }
+
+      await updateProfile(updateData);
+
+      toast({
+        title: "Dados salvos com sucesso!",
+        description: `As informações de ${section} foram atualizadas.`,
+      });
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const testWhatsApp = () => {
@@ -84,12 +172,24 @@ const Perfil = () => {
     });
   };
 
+  // Função para obter as iniciais do usuário
+  const getUserInitials = () => {
+    const name = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'U';
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const renderPersonalData = () => (
     <div className="space-y-6">
       <div className="flex items-center space-x-6">
         <Avatar className="w-24 h-24">
-          <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" />
-          <AvatarFallback>CS</AvatarFallback>
+          <AvatarImage src="" />
+          <AvatarFallback className="bg-blue-500 text-white text-2xl font-medium">
+            {getUserInitials()}
+          </AvatarFallback>
         </Avatar>
         <div>
           <Button variant="outline" className="mb-2">
@@ -160,9 +260,17 @@ const Perfil = () => {
         />
       </div>
 
-      <Button onClick={() => handleSave('dados pessoais')} className="bg-blue-500 hover:bg-blue-600">
-        <Save className="w-4 h-4 mr-2" />
-        Salvar Alterações
+      <Button
+        onClick={() => handleSave('dados pessoais')}
+        className="bg-blue-500 hover:bg-blue-600"
+        disabled={saving}
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4 mr-2" />
+        )}
+        {saving ? 'Salvando...' : 'Salvar Alterações'}
       </Button>
     </div>
   );
@@ -251,9 +359,17 @@ const Perfil = () => {
         </div>
       </div>
 
-      <Button onClick={() => handleSave('dados da empresa')} className="bg-blue-500 hover:bg-blue-600">
-        <Save className="w-4 h-4 mr-2" />
-        Salvar Alterações
+      <Button
+        onClick={() => handleSave('dados da empresa')}
+        className="bg-blue-500 hover:bg-blue-600"
+        disabled={saving}
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Save className="w-4 h-4 mr-2" />
+        )}
+        {saving ? 'Salvando...' : 'Salvar Alterações'}
       </Button>
     </div>
   );
@@ -472,10 +588,19 @@ const Perfil = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          {activeTab === 'personal' && renderPersonalData()}
-          {activeTab === 'company' && renderCompanyData()}
-          {activeTab === 'budget' && renderBudgetSettings()}
-          {activeTab === 'whatsapp' && renderWhatsAppSettings()}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <span className="ml-2 text-gray-600">Carregando dados do perfil...</span>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'personal' && renderPersonalData()}
+              {activeTab === 'company' && renderCompanyData()}
+              {activeTab === 'budget' && renderBudgetSettings()}
+              {activeTab === 'whatsapp' && renderWhatsAppSettings()}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

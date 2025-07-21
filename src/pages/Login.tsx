@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,11 +20,11 @@ const Login = () => {
     rememberMe: false
   });
   const navigate = useNavigate();
-  const { user, loading, signInUser, signInWithGoogle } = useAuth();
+  const { user, loading, signIn, signInWithGoogle } = useAuth();
 
-  // Redirecionar se já estiver autenticado (apenas após o loading terminar)
+  // Redirecionar se já estiver autenticado
   useEffect(() => {
-    if (!loading && user) {
+    if (user && !loading) {
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
@@ -63,7 +63,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await signInUser(formData);
+    const { error } = await signIn(formData.email, formData.password);
     if (error) {
       toast.error("Erro no login", { description: "Verifique seu e-mail e senha." });
     } else {

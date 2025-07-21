@@ -99,6 +99,7 @@ const Signup = () => {
         data: {
           full_name: formData.fullName,
           profession: formData.profession,
+          phone: formData.phone,
         }
       }
     });

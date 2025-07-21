@@ -15,11 +15,16 @@ export interface FormDataState {
   clientAddress: string;
   observations: string;
   profession: string;
+  serviceDescription: string;
   template: string;
   items: FormItem[];
   deadline: string;
+  deadlineValue: string;
+  deadlineUnit: string;
   payment: string;
   warranty: string;
+  warrantyValue: string;
+  warrantyUnit: string;
   generalObservations: string;
   validity: string;
   subtotalMaterials: number;
@@ -45,11 +50,16 @@ export const initialState: FormDataState = {
   clientAddress: '',
   observations: '',
   profession: '',
+  serviceDescription: '',
   template: '',
   items: [{ description: '', quantity: 1, unit: 'un', unitPrice: 0, total: 0, type: 'material' }],
   deadline: '',
+  deadlineValue: '',
+  deadlineUnit: 'dias',
   payment: '',
   warranty: '',
+  warrantyValue: '',
+  warrantyUnit: 'meses',
   generalObservations: '',
   validity: '30',
   subtotalMaterials: 0,

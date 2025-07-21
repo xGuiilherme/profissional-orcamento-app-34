@@ -15,6 +15,7 @@ export interface SaveBudgetData {
   warranty?: string;
   validity?: string;
   general_observations?: string;
+  service_description?: string;
   status?: string;
   profession?: string;
 }
@@ -43,6 +44,7 @@ export const useBudgetOperations = () => {
         warranty: formData.warranty || null,
         validity: formData.validity || '30',
         general_observations: formData.generalObservations || null,
+        service_description: formData.serviceDescription || null,
         status: 'draft',
         profession: formData.profession || null,
       };
@@ -178,7 +180,8 @@ export const useBudgetOperations = () => {
     return {
       id: budgetId || Date.now().toString(),
       category: formData.profession,
-      title: formData.template || 'Serviço Personalizado',
+      title: formData.template,
+      serviceDescription: formData.serviceDescription,
       description: formData.generalObservations || 'Serviços e materiais conforme listado abaixo.',
       value: `R$ ${formData.total.toFixed(2).replace('.', ',')}`,
       items: formData.items,

@@ -49,9 +49,18 @@ export const useAuth = () => {
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
+      async (event, session) => {
         if (isMounted) {
-          setUser(session?.user ?? null);
+          // Só atualizar o estado se realmente mudou
+          const newUser = session?.user ?? null;
+          setUser(prevUser => {
+            // Comparar IDs para evitar re-renders desnecessários
+            if (prevUser?.id !== newUser?.id) {
+              return newUser;
+            }
+            return prevUser;
+          });
+
           if (initialized) {
             setLoading(false);
           }
@@ -70,7 +79,7 @@ export const useAuth = () => {
   };
 
   const signUpUser = async ({ fullName, email, password, profession }: SignUpData) => {
-    return await supabase.auth.signUp({
+    const result = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -80,6 +89,20 @@ export const useAuth = () => {
         },
       },
     });
+
+    // Se o cadastro foi bem-sucedido, atualizar o perfil com o email
+    if (result.data.user && !result.error) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ email: email })
+          .eq('id', result.data.user.id);
+      } catch (error) {
+        console.error('Erro ao atualizar email no perfil:', error);
+      }
+    }
+
+    return result;
   };
 
   const signInWithGoogle = async () => {

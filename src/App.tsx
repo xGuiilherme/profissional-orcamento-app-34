@@ -3,11 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AuthCallback from "./pages/AuthCallback";
+import CompleteRegistration from "./pages/CompleteRegistration";
 import Dashboard from "./pages/Dashboard";
 import Orcamentos from "./pages/Orcamentos";
 import NovoOrcamento from "./pages/NovoOrcamento";
@@ -21,41 +23,51 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/complete-registration" element={
+                <ProtectedRoute>
+                  <CompleteRegistration />
+                </ProtectedRoute>
+              } />
 
-          <Route path="/exemplos" element={<Exemplos />} />
-          
-          {/* Dashboard routes with layout - Protected */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="orcamentos" element={<Orcamentos />} />
-            <Route path="orcamento/novo/:templateId?" element={<NovoOrcamento />} />
-            <Route path="templates" element={<Templates />} />
-            <Route path="perfil" element={<Perfil />} />
-            <Route path="assinatura" element={<Assinatura />} />
-          </Route>
-          
-          {/* Catch-all route for 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              <Route path="/exemplos" element={<Exemplos />} />
+
+              {/* Dashboard routes with layout - Protected */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="orcamentos" element={<Orcamentos />} />
+                <Route path="orcamento/novo/:templateId?" element={<NovoOrcamento />} />
+                <Route path="orcamento/editar/:budgetId" element={<NovoOrcamento />} />
+                <Route path="templates" element={<Templates />} />
+                <Route path="perfil" element={<Perfil />} />
+                <Route path="assinatura" element={<Assinatura />} />
+              </Route>
+
+              {/* Catch-all route for 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

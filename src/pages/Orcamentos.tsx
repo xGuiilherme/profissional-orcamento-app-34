@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -16,6 +16,8 @@ import { TemplateSelectionModal } from '@/components/TemplateSelectionModal';
 import { useBudgetOperations } from '@/hooks/useBudgetOperations';
 import { useToast } from '@/hooks/use-toast';
 
+import PdfPreview from '@/components/PdfPreview';
+
 const Orcamentos = () => {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,9 +27,12 @@ const Orcamentos = () => {
   });
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBudget, setSelectedBudget] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  const { getBudgets, deleteBudget, updateBudgetStatus } = useBudgetOperations();
+  const { getBudgets, deleteBudget, updateBudgetStatus, getBudgetById, convertFormDataToBudgetData } = useBudgetOperations();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Carregar orçamentos do Supabase
   const loadBudgets = async () => {
@@ -45,7 +50,7 @@ const Orcamentos = () => {
             originalId: budget.id,
             client: budget.client_name,
             phone: budget.client_phone || 'Não informado',
-            service: budget.profession || 'Serviço Personalizado',
+            service: budget.service_description || budget.profession || 'Serviço não especificado',
             value: `R$ ${(budget.total || 0).toFixed(2).replace('.', ',')}`,
             date: new Date(budget.created_at).toLocaleDateString('pt-BR'),
             status: getStatusLabel(budget.status),
@@ -249,30 +254,154 @@ const Orcamentos = () => {
     }
   };
 
+  // Função para visualizar orçamento
+  const handleViewBudget = async (row: any) => {
+    try {
+      const result = await getBudgetById(row.originalId);
+      if (result.success && result.data) {
+        const budgetData = convertFormDataToBudgetData({
+          clientName: result.data.client_name,
+          clientPhone: result.data.client_phone || '',
+          clientEmail: result.data.client_email || '',
+          clientAddress: result.data.client_address || '',
+          profession: result.data.profession || '',
+          serviceDescription: result.data.service_description || '',
+          items: result.data.items || [],
+          total: result.data.total || 0,
+          discount: result.data.discount || 0,
+          deadline: result.data.deadline || '',
+          payment: result.data.payment || '',
+          warranty: result.data.warranty || '',
+          validity: result.data.validity || '30',
+          generalObservations: result.data.general_observations || '',
+          observations: result.data.general_observations || '',
+          subtotalMaterials: 0,
+          subtotalLabor: 0,
+          template: '',
+          deadlineValue: '',
+          deadlineUnit: '',
+          warrantyValue: '',
+          warrantyUnit: ''
+        }, row.originalId);
+
+        setSelectedBudget({ ...budgetData, customId: row.id });
+        setIsPreviewOpen(true);
+      } else {
+        toast({
+          title: "Erro",
+          description: result.error || "Erro ao carregar orçamento",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar orçamento",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para editar orçamento
+  const handleEditBudget = (row: any) => {
+    navigate(`/orcamento/editar/${row.originalId}`);
+  };
+
+  // Função para duplicar orçamento
+  const handleDuplicateBudget = async (row: any) => {
+    try {
+      const result = await getBudgetById(row.originalId);
+      if (result.success && result.data) {
+        // Navegar para novo orçamento com dados preenchidos
+        navigate('/orcamento/novo', {
+          state: {
+            duplicateData: {
+              clientName: result.data.client_name,
+              clientPhone: result.data.client_phone || '',
+              clientEmail: result.data.client_email || '',
+              clientAddress: result.data.client_address || '',
+              profession: result.data.profession || '',
+              serviceDescription: result.data.service_description || '',
+              items: result.data.items || [],
+              discount: result.data.discount || 0,
+              deadline: result.data.deadline || '',
+              payment: result.data.payment || '',
+              warranty: result.data.warranty || '',
+              validity: result.data.validity || '30',
+              generalObservations: result.data.general_observations || ''
+            }
+          }
+        });
+        toast({
+          title: "Sucesso",
+          description: "Orçamento duplicado! Preencha os dados e salve.",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: result.error || "Erro ao duplicar orçamento",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao duplicar orçamento",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para download PDF
+  const handleDownloadPDF = async (row: any) => {
+    try {
+      // Primeiro visualizar o orçamento
+      await handleViewBudget(row);
+      toast({
+        title: "Info",
+        description: "Visualize o orçamento e use o botão 'Baixar PDF' na prévia",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao preparar download do PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para enviar via WhatsApp
+  const handleWhatsApp = (row: any) => {
+    const message = `Olá! Segue o orçamento ${row.id} no valor de ${row.value}.
+
+Cliente: ${row.client}
+Serviço: ${row.service}
+Data: ${row.date}
+Status: ${row.status}
+
+Para mais detalhes, acesse nosso sistema.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank');
+  };
+
   const quickActions = [
     {
       label: 'Visualizar',
       icon: Eye,
-      onClick: (row: any) => {
-        // TODO: Implementar visualização do orçamento
-        console.log('View', row);
-      }
+      onClick: handleViewBudget
     },
     {
       label: 'Download PDF',
       icon: Download,
-      onClick: (row: any) => {
-        // TODO: Implementar download do PDF
-        console.log('Download', row);
-      }
+      onClick: handleDownloadPDF
     },
     {
       label: 'WhatsApp',
       icon: MessageSquare,
-      onClick: (row: any) => {
-        // TODO: Implementar envio via WhatsApp
-        console.log('WhatsApp', row);
-      }
+      onClick: handleWhatsApp
     }
   ];
 
@@ -280,18 +409,12 @@ const Orcamentos = () => {
     {
       label: 'Editar',
       icon: Edit,
-      onClick: (row: any) => {
-        // TODO: Implementar edição do orçamento
-        console.log('Edit', row);
-      }
+      onClick: handleEditBudget
     },
     {
       label: 'Duplicar',
       icon: Copy,
-      onClick: (row: any) => {
-        // TODO: Implementar duplicação do orçamento
-        console.log('Copy', row);
-      }
+      onClick: handleDuplicateBudget
     },
     {
       label: 'Marcar como Pendente',
@@ -382,6 +505,19 @@ const Orcamentos = () => {
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
       />
+
+      {/* Modal de prévia do orçamento */}
+      {selectedBudget && (
+        <PdfPreview
+          budget={selectedBudget}
+          isOpen={isPreviewOpen}
+          customId={selectedBudget.customId}
+          onClose={() => {
+            setIsPreviewOpen(false);
+            setSelectedBudget(null);
+          }}
+        />
+      )}
     </div>
   );
 };

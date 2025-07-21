@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FileText, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  FileText,
+  DollarSign,
+  TrendingUp,
   Calendar,
   Eye,
   Edit,
@@ -12,94 +13,191 @@ import {
   Trash2
 } from 'lucide-react';
 import { PageHeader, MetricCard, DataTable } from '@/components';
+import { useBudgetOperations } from '@/hooks/useBudgetOperations';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dashboardMetrics, setDashboardMetrics] = useState({
+    totalBudgets: 0,
+    totalValue: 0,
+    approvedBudgets: 0,
+    thisMonthBudgets: 0
+  });
+
+  const { getBudgets, deleteBudget } = useBudgetOperations();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Carregar orçamentos do Supabase
+  const loadBudgets = async () => {
+    setLoading(true);
+    try {
+      const result = await getBudgets();
+      if (result.success && result.data) {
+        // Transformar dados do Supabase para o formato esperado
+        const transformedBudgets = result.data.map((budget: any, index: number) => {
+          const sequentialId = (index + 1).toString().padStart(3, '0');
+
+          return {
+            id: `ORC${sequentialId}`,
+            originalId: budget.id,
+            client: budget.client_name,
+            service: budget.service_description || budget.profession || 'Serviço não especificado',
+            value: `R$ ${(budget.total || 0).toFixed(2).replace('.', ',')}`,
+            date: new Date(budget.created_at).toLocaleDateString('pt-BR'),
+            status: getStatusLabel(budget.status),
+            rawData: budget
+          };
+        });
+
+        setBudgets(transformedBudgets);
+        calculateMetrics(result.data);
+      } else {
+        toast({
+          title: "Erro",
+          description: result.error || "Erro ao carregar orçamentos",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar orçamentos:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar orçamentos",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular métricas do dashboard
+  const calculateMetrics = (budgetsData: any[]) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const totalBudgets = budgetsData.length;
+    const totalValue = budgetsData.reduce((sum, budget) => sum + (budget.total || 0), 0);
+    const approvedBudgets = budgetsData.filter(budget => budget.status === 'approved').length;
+    const thisMonthBudgets = budgetsData.filter(budget => {
+      const budgetDate = new Date(budget.created_at);
+      return budgetDate.getMonth() === currentMonth && budgetDate.getFullYear() === currentYear;
+    }).length;
+
+    setDashboardMetrics({
+      totalBudgets,
+      totalValue,
+      approvedBudgets,
+      thisMonthBudgets
+    });
+  };
+
+  // Função para mapear status do banco para labels
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'draft': 'Rascunho',
+      'pending': 'Pendente',
+      'approved': 'Aprovado',
+      'rejected': 'Rejeitado',
+      'completed': 'Concluído'
+    };
+    return statusMap[status] || 'Rascunho';
+  };
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    loadBudgets();
+  }, []);
+
+  // Calcular taxa de conversão
+  const conversionRate = dashboardMetrics.totalBudgets > 0
+    ? Math.round((dashboardMetrics.approvedBudgets / dashboardMetrics.totalBudgets) * 100)
+    : 0;
+
+  // Métricas dinâmicas
   const metrics = [
     {
       title: "Total de Orçamentos",
-      value: "127",
-      change: "+12%",
-      changeType: "positive" as const,
+      value: dashboardMetrics.totalBudgets.toString(),
+      change: "+0%", // TODO: Implementar cálculo de mudança
+      changeType: "neutral" as const,
       icon: FileText,
       iconColor: "bg-blue-500"
     },
     {
       title: "Valor Total Orçado",
-      value: "R$ 85.420",
-      change: "+18%",
-      changeType: "positive" as const,
+      value: `R$ ${dashboardMetrics.totalValue.toFixed(2).replace('.', ',')}`,
+      change: "+0%", // TODO: Implementar cálculo de mudança
+      changeType: "neutral" as const,
       icon: DollarSign,
       iconColor: "bg-green-500"
     },
     {
       title: "Taxa de Conversão",
-      value: "73%",
-      change: "+5%",
-      changeType: "positive" as const,
+      value: `${conversionRate}%`,
+      change: "+0%", // TODO: Implementar cálculo de mudança
+      changeType: "neutral" as const,
       icon: TrendingUp,
       iconColor: "bg-purple-500"
     },
     {
       title: "Orçamentos Este Mês",
-      value: "23",
-      change: "+8%",
-      changeType: "positive" as const,
+      value: dashboardMetrics.thisMonthBudgets.toString(),
+      change: "+0%", // TODO: Implementar cálculo de mudança
+      changeType: "neutral" as const,
       icon: Calendar,
       iconColor: "bg-orange-500"
     }
   ];
 
-  const recentBudgets = [
-    {
-      id: "ORC001",
-      client: "João Silva",
-      service: "Instalação Elétrica",
-      value: "R$ 1.200",
-      date: "15/12/2024",
-      status: "Pendente"
-    },
-    {
-      id: "ORC002",
-      client: "Maria Santos",
-      service: "Reparo Hidráulico",
-      value: "R$ 450",
-      date: "14/12/2024",
-      status: "Aprovado"
-    },
-    {
-      id: "ORC003",
-      client: "Pedro Costa",
-      service: "Pintura Residencial",
-      value: "R$ 2.800",
-      date: "13/12/2024",
-      status: "Rejeitado"
-    },
-    {
-      id: "ORC004",
-      client: "Ana Oliveira",
-      service: "Manutenção Elétrica",
-      value: "R$ 680",
-      date: "12/12/2024",
-      status: "Aprovado"
-    },
-    {
-      id: "ORC005",
-      client: "Carlos Lima",
-      service: "Instalação de Tomadas",
-      value: "R$ 320",
-      date: "11/12/2024",
-      status: "Pendente"
+  // Pegar os 5 orçamentos mais recentes
+  const recentBudgets = budgets.slice(0, 5);
+
+  // Ações de CRUD
+  const handleDeleteBudget = async (row: any) => {
+    if (window.confirm('Tem certeza que deseja excluir este orçamento?')) {
+      try {
+        const result = await deleteBudget(row.originalId);
+        if (result.success) {
+          toast({
+            title: "Sucesso",
+            description: "Orçamento excluído com sucesso",
+          });
+          loadBudgets(); // Recarregar dados
+        } else {
+          toast({
+            title: "Erro",
+            description: result.error || "Erro ao excluir orçamento",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro inesperado ao excluir orçamento",
+          variant: "destructive",
+        });
+      }
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Aprovado':
-        return 'bg-green-100 text-green-800';
+      case 'Rascunho':
+        return 'bg-gray-100 text-gray-800';
       case 'Pendente':
         return 'bg-yellow-100 text-yellow-800';
+      case 'Aprovado':
+        return 'bg-green-100 text-green-800';
       case 'Rejeitado':
         return 'bg-red-100 text-red-800';
+      case 'Concluído':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -130,25 +228,11 @@ const Dashboard = () => {
 
   const tableActions = [
     {
-      label: 'Visualizar',
+      label: 'Ver Detalhes',
       icon: Eye,
-      onClick: (row: any) => console.log('View', row)
-    },
-    {
-      label: 'Editar',
-      icon: Edit,
-      onClick: (row: any) => console.log('Edit', row)
-    },
-    {
-      label: 'Duplicar',
-      icon: Copy,
-      onClick: (row: any) => console.log('Copy', row)
-    },
-    {
-      label: 'Excluir',
-      icon: Trash2,
-      onClick: (row: any) => console.log('Delete', row),
-      variant: 'destructive' as const
+      onClick: (row: any) => {
+        window.location.href = '/orcamentos';
+      }
     }
   ];
 
@@ -189,9 +273,13 @@ const Dashboard = () => {
         columns={tableColumns}
         actions={tableActions}
         headerActions={
-          <Link to="/orcamentos">
-            <Button variant="outline">Ver Todos</Button>
-          </Link>
+          <Button
+            variant="outline"
+            className="whitespace-nowrap hover:bg-gray-50"
+            onClick={() => navigate('/orcamentos')}
+          >
+            Ver Todos
+          </Button>
         }
       />
     </div>

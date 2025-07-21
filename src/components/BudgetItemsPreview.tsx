@@ -10,9 +10,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { FormItem } from '@/reducers/orcamentoFormReducer';
 import { paymentTermsMap } from '@/constants/paymentTerms';
+import { UNITS } from '@/constants/orcamentoConst';
 import { Edit2, Trash2, Check, X, Plus } from 'lucide-react';
 import Modal from './Modal';
 
@@ -26,6 +27,7 @@ interface BudgetItemsPreviewProps {
   total?: number;
   paymentTerms?: string;
   warranty?: string;
+  deadline?: string;
   // Props para funcionalidades de edição
   editable?: boolean;
   onItemUpdate?: (index: number, field: keyof FormItem, value: string | number) => void;
@@ -43,6 +45,7 @@ const BudgetItemsPreview = ({
   total = 0,
   paymentTerms = '',
   warranty = '',
+  deadline = '',
   editable = false,
   onItemUpdate,
   onItemRemove,
@@ -150,7 +153,7 @@ const BudgetItemsPreview = ({
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
       <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">ITENS INCLUSOS NO ORÇAMENTO</h3>
+        <h3 className="text-lg font-semibold text-blue-600">ITENS INCLUSOS NO ORÇAMENTO</h3>
       </div>
 
       <div className="p-2 sm:p-4 overflow-x-auto">
@@ -355,9 +358,11 @@ const BudgetItemsPreview = ({
                     <span><strong>Condições de Pagamento:</strong> {paymentTermsMap[paymentTerms] || paymentTerms}</span>
                   </div>
                 )}
-                <div className="text-left">
-                  <span><strong>Prazo de Execução:</strong> Conforme cronograma acordado</span>
-                </div>
+                {deadline && (
+                  <div className="text-left">
+                    <span><strong>Prazo de Execução:</strong> {deadline}</span>
+                  </div>
+                )}
                 {warranty && (
                   <div className="text-left">
                     <span><strong>Garantia:</strong> {warranty} para serviços executados</span>
@@ -407,14 +412,18 @@ const BudgetItemsPreview = ({
 
               <div>
                 <Label htmlFor="new-item-unit" className="text-sm font-medium">Unidade</Label>
-                <Input
+                <select
                   id="new-item-unit"
-                  type="text"
                   value={newItem.unit}
                   onChange={(e) => handleNewItemChange('unit', e.target.value)}
-                  placeholder="ex: un, m², kg"
-                  className="mt-1"
-                />
+                  className="mt-1 flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {UNITS.map((unit) => (
+                    <option key={unit} value={unit}>
+                      {unit}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

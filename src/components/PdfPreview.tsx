@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from 'react';
-import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle, Save } from 'lucide-react';
+import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle, Save, Zap, Wrench, Paintbrush, Hammer, HardHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/hooks/useBudgetData';
 import { useBudgetOperations } from '@/hooks/useBudgetOperations';
 import { FormDataState } from '@/reducers/orcamentoFormReducer';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 import Modal from './Modal';
 import BudgetItemsPreview from './BudgetItemsPreview';
 
@@ -16,11 +18,52 @@ interface PdfPreviewProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: () => void;
+  customId?: string; // ID customizado no formato ORC001
 }
 
-const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewProps) => {
+const PdfPreview = ({ budget, formData, isOpen, onClose, onSave, customId }: PdfPreviewProps) => {
   const { saveBudget } = useBudgetOperations();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
+  // Função para extrair primeiro e último nome
+  const getFirstAndLastName = (fullName: string | null | undefined): string => {
+    if (!fullName) return 'OrçaFácil';
+
+    const names = fullName.trim().split(' ').filter(name => name.length > 0);
+
+    if (names.length === 0) return 'OrçaFácil';
+    if (names.length === 1) return names[0];
+
+    // Retorna primeiro e último nome
+    return `${names[0]} ${names[names.length - 1]}`;
+  };
+
+  // Mapeamento de profissões com ícones e cores
+  const getProfessionInfo = (profession: string) => {
+    const normalizedProfession = profession?.toLowerCase() || '';
+
+    const professionMap: Record<string, { icon: any; color: string; bgColor: string; displayName: string }> = {
+      'eletricistas': { icon: Zap, color: 'text-orange-600', bgColor: 'bg-orange-100', displayName: 'ELETRICISTA' },
+      'eletricista': { icon: Zap, color: 'text-orange-600', bgColor: 'bg-orange-100', displayName: 'ELETRICISTA' },
+      'encanadores': { icon: Wrench, color: 'text-blue-600', bgColor: 'bg-blue-100', displayName: 'ENCANADOR' },
+      'encanador': { icon: Wrench, color: 'text-blue-600', bgColor: 'bg-blue-100', displayName: 'ENCANADOR' },
+      'pintores': { icon: Paintbrush, color: 'text-green-600', bgColor: 'bg-green-100', displayName: 'PINTOR' },
+      'pintor': { icon: Paintbrush, color: 'text-green-600', bgColor: 'bg-green-100', displayName: 'PINTOR' },
+      'marceneiros': { icon: Hammer, color: 'text-amber-600', bgColor: 'bg-amber-100', displayName: 'MARCENEIRO' },
+      'marceneiro': { icon: Hammer, color: 'text-amber-600', bgColor: 'bg-amber-100', displayName: 'MARCENEIRO' },
+      'pedreiros': { icon: HardHat, color: 'text-gray-600', bgColor: 'bg-gray-100', displayName: 'PEDREIRO' },
+      'pedreiro': { icon: HardHat, color: 'text-gray-600', bgColor: 'bg-gray-100', displayName: 'PEDREIRO' },
+    };
+
+    return professionMap[normalizedProfession] || {
+      icon: FileText,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+      displayName: profession?.toUpperCase() || 'PROFISSIONAL'
+    };
+  };
 
   // Estado local para gerenciar os itens editáveis
   const [localFormData, setLocalFormData] = useState(formData);
@@ -150,7 +193,7 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Prévia do Orçamento" className="max-w-4xl h-[90vh]">
+    <Modal isOpen={isOpen} onClose={onClose} title="" className="max-w-4xl h-[90vh]">
       <div className="bg-white">
         {/* PDF Content */}
         <div className="p-8 bg-white border-2 border-gray-100" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -160,26 +203,39 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-green-500 rounded-lg flex items-center justify-center mr-3">
                 <FileText className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">OrçaFácil</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {getFirstAndLastName(profile?.full_name || user?.user_metadata?.full_name)}
+              </h1>
             </div>
-            <p className="text-gray-600">Orçamentos Profissionais • contato@orcafacil.com • (11) 9999-0000</p>
+            <p className="text-gray-600">
+              {profile?.profession || 'Orçamentos Profissionais'} • {profile?.email || user?.email || 'contato@orcafacil.com'} • {profile?.phone || '(11) 9999-0000'}
+            </p>
           </div>
 
           {/* Document Title */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">ORÇAMENTO PROFISSIONAL</h2>
-              <Badge className="bg-blue-100 text-blue-800 text-lg px-4 py-2">
-                #{budget.id.toString().padStart(3, '0')}
+            {/* Título principal e ID */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-0">
+                  PROPOSTA COMERCIAL
+                </h2>
+              </div>
+              <Badge className="bg-blue-100 text-blue-800 text-lg px-4 py-2 self-start sm:self-auto">
+                {customId || `#${budget.id.toString().padStart(3, '0')}`}
               </Badge>
             </div>
-            <div className="flex items-center text-gray-600 mb-2">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span>Data: {currentDate}</span>
-            </div>
-            <div className="flex items-center text-gray-600">
-              <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-              <span>Validade: {budget.validity}</span>
+
+            {/* Data e validade */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-6">
+              <div className="flex items-center text-gray-600">
+                <Calendar className="w-4 h-4 mr-2" />
+                <span className="text-sm sm:text-base">Data: {currentDate}</span>
+              </div>
+              <div className="flex items-center text-gray-600">
+                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                <span className="text-sm sm:text-base">Validade: {budget.validity}</span>
+              </div>
             </div>
           </div>
 
@@ -214,10 +270,11 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
           <div className="mb-8 text-left">
             <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">SERVIÇO SOLICITADO</h3>
             <div className="p-4 bg-blue-50 rounded-lg mb-4">
-              <h4 className="font-semibold text-blue-900 text-lg">{budget.title}</h4>
-              <Badge className="mt-2 bg-blue-500 text-white" >{budget.category}</Badge>
+              <h4 className="font-semibold text-blue-900 text-lg">{budget.serviceDescription || budget.title}</h4>
             </div>
-            <p className="text-gray-700 leading-relaxed text-left">{budget.description}</p>
+            {budget.description && (
+              <p className="text-gray-700 leading-relaxed text-left">{budget.description}</p>
+            )}
           </div>
 
           {/* Items Included */}
@@ -231,6 +288,7 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
             total={localFormData?.total || budget.total}
             paymentTerms={budget.terms}
             warranty={budget.warranty}
+            deadline={localFormData?.deadline || budget.deadline}
             editable={!!formData}
             onItemUpdate={handleItemUpdate}
             onItemRemove={handleItemRemove}
@@ -239,12 +297,14 @@ const PdfPreview = ({ budget, formData, isOpen, onClose, onSave }: PdfPreviewPro
 
           {/* Terms and Conditions */}
           <div className="border-t pt-6">
-            <h3 className="flex items-center text-sm font-semibold text-gray-900 mb-3">OBSERVAÇÕES IMPORTANTES:</h3>
-            <div className="text-sm text-gray-600 text-left">
-              <p>• Este orçamento tem validade de {budget.validity} a partir da data de emissão.</p>
-              <p>• Os valores podem sofrer alterações em caso de mudanças no escopo do projeto.</p>
-              <p>• Materiais e mão de obra inclusos conforme especificado acima.</p>
-              <p>• Início dos trabalhos condicionado à aprovação do orçamento e entrada acordada.</p>
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+              <h3 className="flex items-center text-sm font-semibold text-amber-800 mb-3">OBSERVAÇÕES IMPORTANTES:</h3>
+              <div className="text-sm text-amber-700 text-left space-y-1">
+                <p>• Este orçamento tem validade de {budget.validity} a partir da data de emissão.</p>
+                <p>• Os valores podem sofrer alterações em caso de mudanças no escopo do projeto.</p>
+                <p>• Materiais e mão de obra inclusos conforme especificado acima.</p>
+                <p>• Início dos trabalhos condicionado à aprovação do orçamento e entrada acordada.</p>
+              </div>
             </div>
           </div>
 

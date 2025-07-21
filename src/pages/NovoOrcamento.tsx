@@ -1,17 +1,22 @@
 import { useState, useEffect, useReducer } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import InputMask from 'react-input-mask';
 
 // Lógica e Tipos do Formulário
 import { orcamentoFormReducer, initialState, type FormDataState } from '@/reducers/orcamentoFormReducer';
 
 // Constantes
-import { STEPS, PROFESSIONS, UNITS } from '../constants/orcamentoConst';
+import { STEPS, PROFESSIONS, UNITS, TIME_UNITS } from '../constants/orcamentoConst';
 
 // Hooks
 import { useTemplateData } from '@/hooks/useTemplateData';
 import { useToast } from '@/hooks/use-toast';
 import { useBudgetOperations } from '@/hooks/useBudgetOperations';
+
+// Validações
+import { isValidEmail, isValidPhone } from '@/lib/validations';
+
+
 
 // Componentes de UI
 import PdfPreview from '@/components/PdfPreview';
@@ -21,18 +26,30 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, ArrowRight, CheckCircle, Plus, Trash2 } from 'lucide-react';
+import { IconInput } from '@/components/ui/IconInput';
+import { ArrowLeft, ArrowRight, CheckCircle, Plus, Trash2, Mail } from 'lucide-react';
 
 const NovoOrcamento = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { templateId } = useParams<{ templateId: string }>();
+  const { templateId, budgetId } = useParams<{ templateId?: string; budgetId?: string }>();
 
   const { getTemplateById, getTemplatesByProfession } = useTemplateData();
-  const { convertFormDataToBudgetData } = useBudgetOperations();
+  const { convertFormDataToBudgetData, getBudgetById, getBudgets } = useBudgetOperations();
   const [formData, dispatch] = useReducer(orcamentoFormReducer, initialState);
+  const [isEditing, setIsEditing] = useState(false);
+  const [nextBudgetId, setNextBudgetId] = useState<string>('');
+
+  // Estados para validação
+  const [validationErrors, setValidationErrors] = useState({
+    clientName: '',
+    clientEmail: '',
+    clientPhone: ''
+  });
+
 
   useEffect(() => {
     if (templateId) {
@@ -61,8 +78,211 @@ const NovoOrcamento = () => {
     }
   }, [templateId, getTemplateById]);
 
+  // Carregar dados para edição ou duplicação
+  useEffect(() => {
+    const loadBudgetData = async () => {
+      // Se está editando um orçamento existente
+      if (budgetId) {
+        setIsEditing(true);
+        try {
+          const result = await getBudgetById(budgetId);
+          if (result.success && result.data) {
+            const budget = result.data;
+            dispatch({
+              type: 'SET_FROM_TEMPLATE',
+              payload: {
+                clientName: budget.client_name,
+                clientPhone: budget.client_phone || '',
+                clientEmail: budget.client_email || '',
+                clientAddress: budget.client_address || '',
+                profession: budget.profession || '',
+                serviceDescription: budget.service_description || '',
+                items: budget.items || [],
+                discount: budget.discount || 0,
+                deadline: budget.deadline || '',
+                payment: budget.payment || '',
+                warranty: budget.warranty || '',
+                validity: budget.validity || '30',
+                generalObservations: budget.general_observations || '',
+                template: '',
+                subtotalMaterials: 0,
+                subtotalLabor: 0,
+                total: budget.total || 0,
+                observations: budget.general_observations || ''
+              }
+            });
+          }
+        } catch (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar dados do orçamento",
+            variant: "destructive",
+          });
+        }
+      }
+      // Se está duplicando um orçamento (dados vêm do state)
+      else if (location.state?.duplicateData) {
+        const data = location.state.duplicateData;
+        dispatch({
+          type: 'SET_FROM_TEMPLATE',
+          payload: {
+            ...initialState,
+            ...data
+          }
+        });
+      }
+    };
+
+    loadBudgetData();
+  }, [budgetId, location.state, getBudgetById, toast]);
+
+  // Gerar próximo ID sequencial para novos orçamentos
+  useEffect(() => {
+    const generateNextId = async () => {
+      if (!budgetId && !isEditing) {
+        try {
+          const result = await getBudgets();
+          if (result.success && result.data) {
+            const nextNumber = result.data.length + 1;
+            const nextId = `ORC${nextNumber.toString().padStart(3, '0')}`;
+            setNextBudgetId(nextId);
+          } else {
+            setNextBudgetId('ORC001');
+          }
+        } catch (error) {
+          setNextBudgetId('ORC001');
+        }
+      }
+    };
+
+    generateNextId();
+  }, [budgetId, isEditing, getBudgets]);
+
+  // Validar campos quando formData muda
+  useEffect(() => {
+    if (formData.clientName) {
+      validateName(formData.clientName);
+    }
+    if (formData.clientEmail) {
+      validateEmail(formData.clientEmail);
+    }
+    if (formData.clientPhone) {
+      validatePhone(formData.clientPhone);
+    }
+  }, [formData.clientName, formData.clientEmail, formData.clientPhone]);
+
+  // Atualizar campos combinados quando valores mudam
+  useEffect(() => {
+    updateDeadline();
+  }, [formData.deadlineValue, formData.deadlineUnit]);
+
+  useEffect(() => {
+    updateWarranty();
+  }, [formData.warrantyValue, formData.warrantyUnit]);
+
   const nextStep = () => currentStep < 5 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
+
+  // Funções de validação
+  const validateName = (name: string) => {
+    if (!name || name.trim() === '') {
+      setValidationErrors(prev => ({ ...prev, clientName: 'Campo obrigatório' }));
+      return false;
+    }
+
+    if (name.trim().length < 3) {
+      setValidationErrors(prev => ({ ...prev, clientName: 'Mínimo 3 caracteres' }));
+      return false;
+    }
+
+    if (name.trim().length > 30) {
+      setValidationErrors(prev => ({ ...prev, clientName: 'Máximo 30 caracteres' }));
+      return false;
+    }
+
+    setValidationErrors(prev => ({ ...prev, clientName: '' }));
+    return true;
+  };
+
+  const validateEmail = (email: string) => {
+    if (!email || email.trim() === '') {
+      setValidationErrors(prev => ({ ...prev, clientEmail: '' }));
+      return true; // Email é opcional
+    }
+
+    if (!isValidEmail(email)) {
+      setValidationErrors(prev => ({ ...prev, clientEmail: 'Email inválido' }));
+      return false;
+    }
+
+    setValidationErrors(prev => ({ ...prev, clientEmail: '' }));
+    return true;
+  };
+
+  const validatePhone = (phone: string) => {
+    if (!phone || phone.trim() === '') {
+      setValidationErrors(prev => ({ ...prev, clientPhone: 'Campo obrigatório' }));
+      return false;
+    }
+
+    if (!isValidPhone(phone)) {
+      setValidationErrors(prev => ({ ...prev, clientPhone: 'Telefone inválido' }));
+      return false;
+    }
+
+    setValidationErrors(prev => ({ ...prev, clientPhone: '' }));
+    return true;
+  };
+
+  // Handlers para os campos
+  const handleNameChange = (name: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'clientName', payload: name });
+    validateName(name);
+  };
+
+  const handleEmailChange = (email: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'clientEmail', payload: email });
+    validateEmail(email);
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'clientPhone', payload: phone });
+    validatePhone(phone);
+  };
+
+  // Funções para combinar valor e unidade de tempo
+  const updateDeadline = () => {
+    const combinedDeadline = formData.deadlineValue && formData.deadlineUnit
+      ? `${formData.deadlineValue} ${formData.deadlineUnit}`
+      : '';
+    dispatch({ type: 'UPDATE_FIELD', field: 'deadline', payload: combinedDeadline });
+  };
+
+  const updateWarranty = () => {
+    const combinedWarranty = formData.warrantyValue && formData.warrantyUnit
+      ? `${formData.warrantyValue} ${formData.warrantyUnit}`
+      : '';
+    dispatch({ type: 'UPDATE_FIELD', field: 'warranty', payload: combinedWarranty });
+  };
+
+  // Handlers para os campos de prazo e garantia
+  const handleDeadlineValueChange = (value: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'deadlineValue', payload: value });
+  };
+
+  const handleDeadlineUnitChange = (unit: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'deadlineUnit', payload: unit });
+  };
+
+  const handleWarrantyValueChange = (value: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'warrantyValue', payload: value });
+  };
+
+  const handleWarrantyUnitChange = (unit: string) => {
+    dispatch({ type: 'UPDATE_FIELD', field: 'warrantyUnit', payload: unit });
+  };
+
+
 
   const handleSubmit = () => {
     toast({
@@ -81,26 +301,28 @@ const NovoOrcamento = () => {
               <div className="space-y-2">
                 <Label htmlFor="clientName">Nome do Cliente *</Label>
                 <Input
-                  className={!formData.clientName.trim() ? 'border-red-500' : ''}
+                  className={validationErrors.clientName ? 'border-red-500' : ''}
                   id="clientName"
                   value={formData.clientName}
-                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientName', payload: e.target.value })}
+                  onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Nome completo do cliente"
+                  maxLength={30}
                   required
                 />
+                {validationErrors.clientName && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.clientName}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="clientPhone">Telefone/WhatsApp *</Label>
                 <InputMask
                   mask="(99) 99999-9999"
                   value={formData.clientPhone}
-                  onChange={(e) =>
-                    dispatch({ type: 'UPDATE_FIELD', field: 'clientPhone', payload: e.target.value })
-                  }
+                  onChange={(e) => handlePhoneChange(e.target.value)}
                 >
                   {(inputProps: React.InputHTMLAttributes<HTMLInputElement>) => (
                     <Input
-                      className={!formData.clientPhone.trim() ? 'border-red-500' : ''}
+                      className={validationErrors.clientPhone ? 'border-red-500' : ''}
                       id="clientPhone"
                       {...inputProps}
                       placeholder="(11) 99999-9999"
@@ -108,17 +330,26 @@ const NovoOrcamento = () => {
                     />
                   )}
                 </InputMask>
+                {validationErrors.clientPhone && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.clientPhone}</p>
+                )}
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientEmail">Email (opcional)</Label>
-              <Input
+              <IconInput
+                icon={Mail}
                 id="clientEmail"
+                name="clientEmail"
                 type="email"
-                value={formData.clientEmail}
-                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'clientEmail', payload: e.target.value })}
                 placeholder="cliente@email.com"
+                value={formData.clientEmail}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={validationErrors.clientEmail ? 'border-red-500' : ''}
               />
+              {validationErrors.clientEmail && (
+                <p className="text-xs text-red-500 mt-1">{validationErrors.clientEmail}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientAddress">Endereço Completo *</Label>
@@ -166,6 +397,23 @@ const NovoOrcamento = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Campo para descrição do serviço */}
+            <div className="space-y-2">
+              <Label htmlFor="serviceDescription">Tipo de Serviço *</Label>
+              <Input
+                id="serviceDescription"
+                type="text"
+                placeholder="Ex: Instalação elétrica residencial, Reparo de vazamento, etc."
+                value={formData.serviceDescription || ''}
+                onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'serviceDescription', payload: e.target.value })}
+                className="w-full"
+              />
+              <p className="text-sm text-gray-500">
+                Descreva o tipo de serviço que será realizado. Esta informação aparecerá no orçamento.
+              </p>
+            </div>
+
             {formData.profession && (
               <div className="space-y-2">
                 <Label>Template Base</Label>
@@ -311,14 +559,32 @@ const NovoOrcamento = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="deadline">Prazo de Execução *</Label>
-                <Input
-                  className={!formData.deadline.trim() ? 'border-red-500' : ''}
-                  id="deadline"
-                  value={formData.deadline}
-                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'deadline', payload: e.target.value })}
-                  placeholder="Ex: 5 dias úteis"
-                />
+                <Label>Prazo de Execução *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    className={!formData.deadlineValue.trim() ? 'border-red-500' : ''}
+                    value={formData.deadlineValue}
+                    onChange={(e) => handleDeadlineValueChange(e.target.value)}
+                    placeholder="Ex: 5"
+                    type="number"
+                    min="1"
+                  />
+                  <Select
+                    value={formData.deadlineUnit}
+                    onValueChange={handleDeadlineUnitChange}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_UNITS.map((unit) => (
+                        <SelectItem key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payment">Forma de Pagamento *</Label>
@@ -340,13 +606,31 @@ const NovoOrcamento = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="warranty">Garantia</Label>
-                <Input
-                  id="warranty"
-                  value={formData.warranty}
-                  onChange={(e) => dispatch({ type: 'UPDATE_FIELD', field: 'warranty', payload: e.target.value })}
-                  placeholder="Ex: 12 meses"
-                />
+                <Label>Garantia</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.warrantyValue}
+                    onChange={(e) => handleWarrantyValueChange(e.target.value)}
+                    placeholder="Ex: 12"
+                    type="number"
+                    min="1"
+                  />
+                  <Select
+                    value={formData.warrantyUnit}
+                    onValueChange={handleWarrantyUnitChange}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_UNITS.map((unit) => (
+                        <SelectItem key={unit.value} value={unit.value}>
+                          {unit.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="validity">Validade do Orçamento (dias)</Label>
@@ -388,6 +672,7 @@ const NovoOrcamento = () => {
               budget={budgetData}
               formData={formData}
               isOpen={isPreviewOpen}
+              customId={isEditing ? undefined : nextBudgetId}
               onClose={() => setIsPreviewOpen(false)}
               onSave={() => {
                 toast({
@@ -419,7 +704,9 @@ const NovoOrcamento = () => {
             Voltar
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Novo Orçamento</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {isEditing ? 'Editar Orçamento' : 'Novo Orçamento'}
+            </h1>
             <p className="text-gray-600">Etapa {currentStep} de 5</p>
           </div>
         </div>
@@ -492,10 +779,17 @@ const NovoOrcamento = () => {
           <Button
             onClick={nextStep}
             disabled={
-              (currentStep === 1 && (!formData.clientName || !formData.clientPhone || !formData.clientAddress)) ||
-              (currentStep === 2 && !formData.profession) ||
+              (currentStep === 1 && (
+                !formData.clientName ||
+                !formData.clientPhone ||
+                !formData.clientAddress ||
+                validationErrors.clientName ||
+                validationErrors.clientPhone ||
+                validationErrors.clientEmail
+              )) ||
+              (currentStep === 2 && (!formData.profession || !formData.serviceDescription)) ||
               (currentStep === 3 && formData.items.some(item => !item.description.trim())) ||
-              (currentStep === 4 && (!formData.deadline || !formData.payment))
+              (currentStep === 4 && (!formData.deadlineValue || !formData.payment))
             }
             className="min-w-32 bg-blue-500 hover:bg-blue-600"
           >
