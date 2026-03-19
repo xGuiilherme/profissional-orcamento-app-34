@@ -1,6 +1,5 @@
 
 import { Calendar, User, MapPin, Phone, Mail, FileText, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BudgetData } from '@/hooks/useBudgetData';
 import Modal from './Modal';
@@ -94,24 +93,55 @@ const PdfPreview = ({ budget, isOpen, onClose }: PdfPreviewProps) => {
           {/* Items Included */}
           <div className="mb-8">
             <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">ITENS INCLUSOS NO ORÇAMENTO</h3>
-            <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Item</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-900 w-16">Incluído</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {budget.items.map((item, index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="flex items-center py-3 px-4 text-gray-700">{item}</td>
-                      <td className="py-3 px-4 text-center">
-                        <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {budget.itemDetails && budget.itemDetails.length > 0 ? (
+                  <>
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-900">Descrição</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-900">Qtd</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-900">Unid.</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-900">Valor Unit.</th>
+                        <th className="text-right py-3 px-4 font-semibold text-gray-900">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {budget.itemDetails.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="py-3 px-4 text-gray-700">{item.description || 'Item sem descrição'}</td>
+                          <td className="py-3 px-4 text-center text-gray-700">{item.quantity}</td>
+                          <td className="py-3 px-4 text-center text-gray-700">{item.unit}</td>
+                          <td className="py-3 px-4 text-right text-gray-700">
+                            R$ {item.unitPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-3 px-4 text-right font-semibold text-green-600">
+                            R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                ) : (
+                  <>
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-900">Item</th>
+                        <th className="text-center py-3 px-4 font-semibold text-gray-900 w-16">Incluído</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {budget.items.map((item, index) => (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="flex items-center py-3 px-4 text-gray-700">{item}</td>
+                          <td className="py-3 px-4 text-center">
+                            <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </>
+                )}
               </table>
             </div>
           </div>

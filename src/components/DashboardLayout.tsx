@@ -1,6 +1,5 @@
-
-import { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -26,15 +25,20 @@ import {
   HelpCircle,
   Plus
 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userName, setUserName] = useState('Usuário');
+  const [userEmail, setUserEmail] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Orçamentos', href: '/orcamentos', icon: FileText },
-    { name: 'Templates', href: '/templates', icon: Calculator },
+    // { name: 'Templates', href: '/templates', icon: Calculator },
     { name: 'Meu Perfil', href: '/perfil', icon: User },
     { name: 'Configurações', href: '/configuracoes', icon: Settings },
     { name: 'Assinatura', href: '/assinatura', icon: CreditCard },
@@ -42,6 +46,27 @@ const DashboardLayout = () => {
 
   const isCurrentPath = (path: string) => {
     return location.pathname === path;
+  };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user) return;
+      setUserName(
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        'Usuário'
+      );
+      setUserEmail(user.email || '');
+      setAvatarUrl(user.user_metadata?.avatar_url || '');
+    };
+    loadUser();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
   };
 
   return (
@@ -114,11 +139,11 @@ const DashboardLayout = () => {
 
           <div className="p-4 border-t">
             <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg">
-              <p className="text-sm font-medium text-gray-900 mb-1">Teste Grátis</p>
-              <p className="text-xs text-gray-600 mb-3">5 dias restantes</p>
+              <p className="text-sm font-medium text-gray-900 mb-1">Plano da Conta</p>
+              <p className="text-xs text-gray-600 mb-3">Gerencie seu plano e recursos</p>
               <Link to="/assinatura">
                 <Button size="sm" className="w-full bg-blue-500 hover:bg-blue-600">
-                  Assinar Agora
+                  Ver Assinatura
                 </Button>
               </Link>
             </div>
@@ -152,17 +177,17 @@ const DashboardLayout = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" />
-                      <AvatarFallback>CS</AvatarFallback>
+                      <AvatarImage src={avatarUrl} />
+                      <AvatarFallback>{userName.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Carlos Silva</p>
+                      <p className="text-sm font-medium leading-none">{userName}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        carlos@email.com
+                        {userEmail}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -184,11 +209,9 @@ const DashboardLayout = () => {
                     Ajuda
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/login">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sair
-                    </Link>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

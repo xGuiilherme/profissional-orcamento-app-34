@@ -15,6 +15,7 @@ export interface FormDataState {
   clientAddress: string;
   observations: string;
   profession: string;
+  customProfession?: string;
   template: string;
   items: FormItem[];
   deadline: string;

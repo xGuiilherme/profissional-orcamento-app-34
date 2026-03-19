@@ -8,6 +8,14 @@ export interface BudgetData {
   description: string;
   value: string;
   items: string[];
+  itemDetails?: {
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+    type: 'material' | 'labor';
+  }[];
   clientName: string;
   clientAddress: string;
   clientPhone: string;

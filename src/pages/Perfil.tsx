@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,41 +24,40 @@ import {
   XCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabaseClient';
 
 const Perfil = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('personal');
+  const [userId, setUserId] = useState<string>('');
+  const [userEmail, setUserEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [personalData, setPersonalData] = useState({
-    name: 'Carlos Silva',
-    email: 'carlos@email.com',
-    phone: '(11) 99999-1111',
-    profession: 'Eletricista',
-    specialties: 'Instalações residenciais, Manutenção preventiva'
+    name: '',
+    phone: '',
+    profession: '',
+    specialties: ''
   });
 
   const [companyData, setCompanyData] = useState({
-    companyName: 'Silva Elétrica',
-    cnpj: '12.345.678/0001-90',
-    address: 'Rua das Flores, 123 - São Paulo, SP',
-    cep: '01234-567',
-    city: 'São Paulo',
-    state: 'SP'
+    companyName: '',
+    cnpj: '',
+    address: '',
+    cep: '',
+    city: '',
+    state: ''
   });
 
   const [budgetSettings, setBudgetSettings] = useState({
-    defaultSignature: 'Atenciosamente,\nCarlos Silva\nEletricista Certificado\n(11) 99999-1111',
-    defaultTerms: 'Validade: 30 dias\nGarantia: 12 meses\nForma de pagamento: A combinar',
-    defaultColors: {
-      primary: '#0ea5e9',
-      secondary: '#10b981'
-    },
-    defaultMargin: 15
+    defaultSignature: '',
+    defaultTerms: ''
   });
 
   const [whatsappSettings, setWhatsappSettings] = useState({
     connected: false,
-    phone: '(11) 99999-1111',
+    phone: '',
     lastTest: null as Date | null
   });
 
@@ -69,7 +68,96 @@ const Perfil = () => {
     { id: 'whatsapp', title: 'Integração WhatsApp', icon: MessageSquare }
   ];
 
-  const handleSave = (section: string) => {
+  useEffect(() => {
+    const loadProfile = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData.user;
+      if (!authUser) {
+        setIsLoading(false);
+        return;
+      }
+
+      setUserId(authUser.id);
+      setUserEmail(authUser.email || '');
+
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      if (profile) {
+        setPersonalData({
+          name: profile.full_name || '',
+          phone: profile.phone || '',
+          profession: profile.profession || '',
+          specialties: profile.specialties || ''
+        });
+
+        setCompanyData({
+          companyName: profile.company_name || '',
+          cnpj: profile.cnpj || '',
+          address: profile.company_address || '',
+          cep: profile.company_cep || '',
+          city: profile.company_city || '',
+          state: profile.company_state || ''
+        });
+
+        setBudgetSettings({
+          defaultSignature: profile.default_signature || '',
+          defaultTerms: profile.default_terms || ''
+        });
+
+        setWhatsappSettings({
+          connected: profile.whatsapp_connected || false,
+          phone: profile.whatsapp_phone || '',
+          lastTest: profile.whatsapp_last_test ? new Date(profile.whatsapp_last_test) : null
+        });
+      }
+
+      setIsLoading(false);
+    };
+
+    loadProfile();
+  }, []);
+
+  const saveProfile = async (section: string) => {
+    if (!userId) return;
+    setIsSaving(true);
+
+    const payload = {
+      id: userId,
+      full_name: personalData.name,
+      profession: personalData.profession,
+      phone: personalData.phone,
+      specialties: personalData.specialties,
+      company_name: companyData.companyName,
+      cnpj: companyData.cnpj,
+      company_address: companyData.address,
+      company_cep: companyData.cep,
+      company_city: companyData.city,
+      company_state: companyData.state,
+      default_signature: budgetSettings.defaultSignature,
+      default_terms: budgetSettings.defaultTerms,
+      whatsapp_connected: whatsappSettings.connected,
+      whatsapp_phone: whatsappSettings.phone,
+      whatsapp_last_test: whatsappSettings.lastTest?.toISOString() || null
+    };
+
+    const { error } = await supabase
+      .from('user_profiles')
+      .upsert(payload, { onConflict: 'id' });
+
+    setIsSaving(false);
+    if (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: "Dados salvos com sucesso!",
       description: `As informações de ${section} foram atualizadas.`,
@@ -77,7 +165,8 @@ const Perfil = () => {
   };
 
   const testWhatsApp = () => {
-    setWhatsappSettings(prev => ({ ...prev, lastTest: new Date() }));
+    const now = new Date();
+    setWhatsappSettings(prev => ({ ...prev, lastTest: now }));
     toast({
       title: "Teste realizado!",
       description: "Mensagem de teste enviada para o WhatsApp.",
@@ -88,8 +177,8 @@ const Perfil = () => {
     <div className="space-y-6">
       <div className="flex items-center space-x-6">
         <Avatar className="w-24 h-24">
-          <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" />
-          <AvatarFallback>CS</AvatarFallback>
+          <AvatarImage src="" />
+          <AvatarFallback>{(personalData.name || 'U').slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
         <div>
           <Button variant="outline" className="mb-2">
@@ -115,8 +204,8 @@ const Perfil = () => {
           <Input
             id="email"
             type="email"
-            value={personalData.email}
-            onChange={(e) => setPersonalData(prev => ({ ...prev, email: e.target.value }))}
+            value={userEmail}
+            disabled
           />
         </div>
       </div>
@@ -160,9 +249,9 @@ const Perfil = () => {
         />
       </div>
 
-      <Button onClick={() => handleSave('dados pessoais')} className="bg-blue-500 hover:bg-blue-600">
+      <Button onClick={() => saveProfile('dados pessoais')} className="bg-blue-500 hover:bg-blue-600" disabled={isSaving}>
         <Save className="w-4 h-4 mr-2" />
-        Salvar Alterações
+        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
       </Button>
     </div>
   );
@@ -251,9 +340,9 @@ const Perfil = () => {
         </div>
       </div>
 
-      <Button onClick={() => handleSave('dados da empresa')} className="bg-blue-500 hover:bg-blue-600">
+      <Button onClick={() => saveProfile('dados da empresa')} className="bg-blue-500 hover:bg-blue-600" disabled={isSaving}>
         <Save className="w-4 h-4 mr-2" />
-        Salvar Alterações
+        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
       </Button>
     </div>
   );
@@ -282,69 +371,10 @@ const Perfil = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-2">
-          <Label>Cor Primária</Label>
-          <div className="flex items-center space-x-2">
-            <Input
-              type="color"
-              value={budgetSettings.defaultColors.primary}
-              onChange={(e) => setBudgetSettings(prev => ({ 
-                ...prev, 
-                defaultColors: { ...prev.defaultColors, primary: e.target.value }
-              }))}
-              className="w-16 h-10"
-            />
-            <Input
-              value={budgetSettings.defaultColors.primary}
-              onChange={(e) => setBudgetSettings(prev => ({ 
-                ...prev, 
-                defaultColors: { ...prev.defaultColors, primary: e.target.value }
-              }))}
-              placeholder="#0ea5e9"
-            />
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label>Cor Secundária</Label>
-          <div className="flex items-center space-x-2">
-            <Input
-              type="color"
-              value={budgetSettings.defaultColors.secondary}
-              onChange={(e) => setBudgetSettings(prev => ({ 
-                ...prev, 
-                defaultColors: { ...prev.defaultColors, secondary: e.target.value }
-              }))}
-              className="w-16 h-10"
-            />
-            <Input
-              value={budgetSettings.defaultColors.secondary}
-              onChange={(e) => setBudgetSettings(prev => ({ 
-                ...prev, 
-                defaultColors: { ...prev.defaultColors, secondary: e.target.value }
-              }))}
-              placeholder="#10b981"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="defaultMargin">Margem de Lucro Padrão (%)</Label>
-          <Input
-            id="defaultMargin"
-            type="number"
-            value={budgetSettings.defaultMargin}
-            onChange={(e) => setBudgetSettings(prev => ({ ...prev, defaultMargin: parseInt(e.target.value) || 0 }))}
-            min="0"
-            max="100"
-          />
-        </div>
-      </div>
-
-      <Button onClick={() => handleSave('configurações de orçamento')} className="bg-blue-500 hover:bg-blue-600">
+      <Button onClick={() => saveProfile('configurações de orçamento')} className="bg-blue-500 hover:bg-blue-600" disabled={isSaving}>
         <Save className="w-4 h-4 mr-2" />
-        Salvar Configurações
+        {isSaving ? 'Salvando...' : 'Salvar Configurações'}
       </Button>
     </div>
   );
@@ -411,7 +441,9 @@ const Perfil = () => {
           Testar Envio
         </Button>
         <Button 
-          onClick={() => setWhatsappSettings(prev => ({ ...prev, connected: !prev.connected }))}
+          onClick={() => {
+            setWhatsappSettings(prev => ({ ...prev, connected: !prev.connected }));
+          }}
           className={whatsappSettings.connected ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
         >
           {whatsappSettings.connected ? 'Desconectar' : 'Conectar'} WhatsApp
@@ -432,6 +464,12 @@ const Perfil = () => {
         <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
         <p className="text-gray-600 mt-1">Gerencie suas informações pessoais e configurações</p>
       </div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">Carregando dados do perfil...</CardContent>
+        </Card>
+      ) : (
+        <>
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-8">
@@ -475,9 +513,19 @@ const Perfil = () => {
           {activeTab === 'personal' && renderPersonalData()}
           {activeTab === 'company' && renderCompanyData()}
           {activeTab === 'budget' && renderBudgetSettings()}
-          {activeTab === 'whatsapp' && renderWhatsAppSettings()}
+          {activeTab === 'whatsapp' && (
+            <div className="space-y-6">
+              {renderWhatsAppSettings()}
+              <Button onClick={() => saveProfile('integração de WhatsApp')} className="bg-blue-500 hover:bg-blue-600" disabled={isSaving}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Salvando...' : 'Salvar Configurações de WhatsApp'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+        </>
+      )}
     </div>
   );
 };

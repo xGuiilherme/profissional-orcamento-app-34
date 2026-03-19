@@ -1,11 +1,9 @@
-import { User, Wrench, Calculator, FileText, Eye } from 'lucide-react';
+import { User, Calculator, FileText } from 'lucide-react';
 
 export const STEPS = [
   { number: 1, title: 'Dados do Cliente', icon: User },
-  { number: 2, title: 'Tipo de Serviço', icon: Wrench },
-  { number: 3, title: 'Serviços e Materiais', icon: Calculator },
-  { number: 4, title: 'Condições', icon: FileText },
-  { number: 5, title: 'Preview', icon: Eye }
+  { number: 2, title: 'Serviço e Itens', icon: Calculator },
+  { number: 3, title: 'Condições e Preview', icon: FileText }
 ];
 
 export const PROFESSIONS = [
@@ -13,7 +11,8 @@ export const PROFESSIONS = [
   { value: 'encanador', label: 'Encanador' },
   { value: 'pintor', label: 'Pintor' },
   { value: 'pedreiro', label: 'Pedreiro' },
-  { value: 'marceneiro', label: 'Marceneiro' }
+  { value: 'marceneiro', label: 'Marceneiro' },
+  { value: 'outros', label: 'Outros (especificar)' }
 ];
 
 export const UNITS = ['un', 'm²', 'm', 'kg', 'l', 'pç', 'h'];

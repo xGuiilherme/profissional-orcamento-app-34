@@ -30,11 +30,19 @@ const Login = () => {
     }));
   };
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) { toast.error("Erro no login com Google", { description: error.message }); }
-    setIsLoading(false);
+  const handleGoogleLogin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        toast.error("Erro no login com Google", { description: error.message });
+        setIsGoogleLoading(false);
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado", { description: err.message });
+      setIsGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +82,7 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <Button
+              type="button"
               variant="outline"
               className="w-full mb-4 bg-white hover:bg-gray-50 text-gray-700 shadow-sm border-gray-300"
               onClick={handleGoogleLogin}
